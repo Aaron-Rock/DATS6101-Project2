@@ -21,3 +21,9 @@ options(scientific=T, digits = 3)
 # use scipen=999 to prevent scientific notation at all times
 ```
 
+
+```{r}
+#First, load the file
+online = data.frame(read.csv("online_shoppers_intention.csv"))
+head(online)
+```
