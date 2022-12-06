@@ -67,47 +67,41 @@ ggplot(df_orig, aes(x=OperatingSystems, color=Revenue, fill=Revenue)) +
   scale_color_viridis(discrete=TRUE) +
   scale_fill_viridis(discrete=TRUE) +
   scale_x_continuous(breaks=1:8) + scale_y_continuous(n.breaks=6) +
-  # scale_fill_manual(values=c("orange", "blue")) +
   theme_ipsum()  
 
 ggplot(df_orig, aes(x=Browser, color=Revenue, fill=Revenue)) +
   geom_histogram(binwidth = 0.5, alpha=0.6, position = 'identity') +
   scale_x_continuous(breaks=1:13, ) + scale_y_continuous(n.breaks=6) +
   theme_ipsum() 
-```
 
-
-```{r, results='markup'}
 ggplot(df_orig, aes(x=TrafficType, color=Revenue, fill=Revenue)) +
-  geom_histogram(binwidth = 1, alpha=0.6, position = 'identity') +
+  geom_histogram(binwidth = 1, alpha=0.6) +
   scale_fill_manual(values=c("orange", "blue")) +
   scale_x_continuous(n.breaks=20) + scale_y_continuous(n.breaks=6) + 
   theme_ipsum()  
-```
 
-```{r ,results='markup'}
 ggplot(df_orig, aes(x=VisitorType, color=Revenue, fill=Revenue)) +
-  geom_histogram(binwidth = 1, alpha=0.6, stat="count") +
+  geom_histogram(alpha=0.6, stat="count") +
   scale_fill_manual(values=c("pink", "green")) + scale_color_manual(values=c("pink", "green")) +
   theme_ipsum()  
-```
-```{r, results='markup'}
+
 ggplot(df_orig, aes(x=Weekend, color=Revenue, fill=Revenue)) +
-  geom_histogram(binwidth = 1, alpha=0.6, stat="count") +
+  geom_histogram(alpha=0.6, stat="count") +
   scale_fill_manual(values=c("cyan", "gray")) + scale_color_manual(values=c("cyan", "gray")) +
   theme_ipsum() 
-```
-```{r, results='markup'}
-ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
-  geom_histogram(binwidth = 1, alpha=0.6, stat="count") + stat_bin(center=1)
-  # scale_fill_manual(values=c("orange", "blue")) +
-  scale_x_continuous(breaks=1:13, ) + scale_y_continuous(n.breaks=6) + 
 
+ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
+  geom_histogram(binwidth = 1, alpha=0.6, stat="count") + stat_bin(center=1) +
+  scale_x_continuous(breaks=1:13, ) + scale_y_continuous(n.breaks=6) + 
   theme_ipsum() 
 ```
 
 ```{r, results='markup', fig.align="center", fig.width = 10, fig.height=10}
 # corPlot(df, cex = 1.2)
 pairs.panels(df)
+```
+
+```{r, results='markup'}
+
 ```
 
