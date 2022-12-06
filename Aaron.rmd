@@ -70,3 +70,16 @@ infoDur
 prodDur = ggplot(online, aes(ProductRelated_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30)
 prodDur
 ```
+```{r}
+# Bounce Rate is measured by total one page visits divided by total visits 
+bounceBox = ggplot(online, aes(BounceRates)) + geom_boxplot(color='blue')
+bounceBox
+# Exit Rate is measured by total exits from page divided by total visits to page
+exitBox = ggplot(online, aes(ExitRates)) + geom_boxplot(color='orange')
+exitBox
+```
+The average Bounce Rate for this site is `r mean(online$BounceRates)*100`%.
+The average Exit Rate for this site is `r mean(online$ExitRates)*100`%.
+
+For our dataset it would be better to see individual page exit and bounce rates. The column variables Exit and Bounce Rates are the average of these metrics over each page on this site.
+
