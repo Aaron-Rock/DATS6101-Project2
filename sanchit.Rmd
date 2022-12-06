@@ -13,6 +13,8 @@ library(ggplot2)
 library(dplyr)
 install.packages("matrixStats")
 library(matrixStats)
+library(psych)
+
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
 options(scientific=T, digits = 3) 
@@ -22,22 +24,45 @@ options(scientific=T, digits = 3)
 ```
 
 
-```{r}
+```{r, results='markup'}
 #First, load the file
-df = data.frame(read.csv("online_shoppers_intention.csv"))
+df_orig = data.frame(read.csv("online_shoppers_intention.csv"))
+head(df_orig)
+```
+
+
+```{r, results='markup'}
+colSums(is.na(df_orig))
+```
+
+```{r, results='markup'}
+table(df_orig$OperatingSystems)
+```
+
+```{r, results='markup'}
+df = data.frame(df_orig)
+
+df[, c('VisitorType', 'Weekend', 'Revenue')] <- sapply(df[, c('VisitorType', 'Weekend', 'Revenue')], unclass)
+
+df$VisitorType = factor(df$VisitorType)
+df$Weekend = factor(df$Weekend)
+df$Revenue = factor(df$Revenue)
+
 head(df)
 ```
 
-
-```{r}
-colSums(is.na(df))
+```{r, results='markup'}
+ggplot(df, aes(x=OperatingSystems)) + geom_histogram(bins = 8, fill="pink") + geom_freqpoly(bins=8, color="red")
 ```
 
 ```{r}
-table(df$Revenue)
+ggplot(df, aes(x=TrafficType, color=Revenue)) + geom_histogram(binwidth = 1, alpha=0.6, position = 'identity') + 
+  scale_fill_manual(values=c("#69b3a2", "#404080"))
+  # theme_ipsum()
+# + geom_histogram(bins = 8, fill="pink") + geom_freqpoly(bins=8, color="red")
 ```
 
-```{r}
-table(df$TrafficType)
+```{r, results='markup'}
+corPlot(df, cex = 1.2)
 ```
 
