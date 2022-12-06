@@ -62,4 +62,11 @@ specialDay
 # scatterSpecialDay = ggplot(online, aes(Revenue, SpecialDay)) + geom_violin(), this plot had no significance
 ```
 
-
+```{r}
+adminDur = ggplot(online, aes(Administrative_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30)
+adminDur
+infoDur = ggplot(online, aes(Informational_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30)
+infoDur
+prodDur = ggplot(online, aes(ProductRelated_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30)
+prodDur
+```
