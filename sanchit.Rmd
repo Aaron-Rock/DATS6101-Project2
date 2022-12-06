@@ -14,7 +14,9 @@ library(dplyr)
 install.packages("matrixStats")
 library(matrixStats)
 library(psych)
-
+library(hrbrthemes)
+library(viridis)
+# library(forcats)
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
 options(scientific=T, digits = 3) 
@@ -36,33 +38,76 @@ colSums(is.na(df_orig))
 ```
 
 ```{r, results='markup'}
-table(df_orig$OperatingSystems)
+table(df_orig$Browser)
 ```
 
 ```{r, results='markup'}
 df = data.frame(df_orig)
 
-df[, c('VisitorType', 'Weekend', 'Revenue')] <- sapply(df[, c('VisitorType', 'Weekend', 'Revenue')], unclass)
+df$VisitorType = factor(df$VisitorType)
+df$Weekend = factor(df$Weekend)
+df$Revenue = factor(df$Revenue)
+df$Month = factor(df$Month)
+
+df[, c('VisitorType', 'Weekend', 'Revenue', 'Month')] <- sapply(df[, c('VisitorType', 'Weekend', 'Revenue', 'Month')], unclass)
 
 df$VisitorType = factor(df$VisitorType)
 df$Weekend = factor(df$Weekend)
 df$Revenue = factor(df$Revenue)
+df$Month = factor(df$Month)
 
 head(df)
 ```
 
 ```{r, results='markup'}
-ggplot(df, aes(x=OperatingSystems)) + geom_histogram(bins = 8, fill="pink") + geom_freqpoly(bins=8, color="red")
+ggplot(df_orig, aes(x=OperatingSystems, color=Revenue, fill=Revenue)) +
+  # geom_histogram(bins = 8, fill="pink") + 
+  # geom_freqpoly(bins=8, color="red") +
+  geom_histogram(binwidth = 0.5, alpha=0.6, position = 'identity') +
+  scale_color_viridis(discrete=TRUE) +
+  scale_fill_viridis(discrete=TRUE) +
+  scale_x_continuous(breaks=1:8) + scale_y_continuous(n.breaks=6) +
+  # scale_fill_manual(values=c("orange", "blue")) +
+  theme_ipsum()  
+
+ggplot(df_orig, aes(x=Browser, color=Revenue, fill=Revenue)) +
+  geom_histogram(binwidth = 0.5, alpha=0.6, position = 'identity') +
+  scale_x_continuous(breaks=1:13, ) + scale_y_continuous(n.breaks=6) +
+  theme_ipsum() 
 ```
 
-```{r}
-ggplot(df, aes(x=TrafficType, color=Revenue)) + geom_histogram(binwidth = 1, alpha=0.6, position = 'identity') + 
-  scale_fill_manual(values=c("#69b3a2", "#404080"))
-  # theme_ipsum()
-# + geom_histogram(bins = 8, fill="pink") + geom_freqpoly(bins=8, color="red")
-```
 
 ```{r, results='markup'}
-corPlot(df, cex = 1.2)
+ggplot(df_orig, aes(x=TrafficType, color=Revenue, fill=Revenue)) +
+  geom_histogram(binwidth = 1, alpha=0.6, position = 'identity') +
+  scale_fill_manual(values=c("orange", "blue")) +
+  scale_x_continuous(n.breaks=20) + scale_y_continuous(n.breaks=6) + 
+  theme_ipsum()  
+```
+
+```{r ,results='markup'}
+ggplot(df_orig, aes(x=VisitorType, color=Revenue, fill=Revenue)) +
+  geom_histogram(binwidth = 1, alpha=0.6, stat="count") +
+  scale_fill_manual(values=c("pink", "green")) + scale_color_manual(values=c("pink", "green")) +
+  theme_ipsum()  
+```
+```{r, results='markup'}
+ggplot(df_orig, aes(x=Weekend, color=Revenue, fill=Revenue)) +
+  geom_histogram(binwidth = 1, alpha=0.6, stat="count") +
+  scale_fill_manual(values=c("cyan", "gray")) + scale_color_manual(values=c("cyan", "gray")) +
+  theme_ipsum() 
+```
+```{r, results='markup'}
+ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
+  geom_histogram(binwidth = 1, alpha=0.6, stat="count") + stat_bin(center=1)
+  # scale_fill_manual(values=c("orange", "blue")) +
+  scale_x_continuous(breaks=1:13, ) + scale_y_continuous(n.breaks=6) + 
+
+  theme_ipsum() 
+```
+
+```{r, results='markup', fig.align="center", fig.width = 10, fig.height=10}
+# corPlot(df, cex = 1.2)
+pairs.panels(df)
 ```
 
