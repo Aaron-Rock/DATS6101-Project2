@@ -27,3 +27,25 @@ options(scientific=T, digits = 3)
 online = data.frame(read.csv("online_shoppers_intention.csv"))
 head(online)
 ```
+
+```{r, results='hide'}
+# Handling categorical variables prior to plotting
+online$Month = as.factor(online$Month)
+online$Revenue = as.factor(online$Revenue)
+online$Weekend = as.factor(online$Weekend)
+online$VisitorType = as.factor(online$VisitorType)
+```
+
+``` {r}
+monthFrequency = ggplot(online, aes(x=Month, color=Month, fill=Month)) + geom_bar()
+monthFrequency
+
+userCount = ggplot(online, aes(x=VisitorType, color=VisitorType, fill=VisitorType)) + geom_bar()
+userCount
+```
+
+
+
+
+
+
