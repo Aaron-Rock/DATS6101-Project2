@@ -42,10 +42,24 @@ monthFrequency
 
 userCount = ggplot(online, aes(x=VisitorType, color=VisitorType, fill=VisitorType)) + geom_bar()
 userCount
+
+revCount = ggplot(online, aes(x=Revenue, color=Revenue, fill=Revenue)) + geom_bar()
+revCount
+
+
+revTrue = subset(online, online$Revenue == TRUE)
+revFalse = subset(online, online$Revenue == FALSE)
+pieNum <- c(nrow(revTrue), nrow(revFalse))
+piepercent<- round(100*pieNum/sum(pieNum), 1)
+pie(pieNum, labels = piepercent, main = "Revenue Percentages",col = rainbow(length(pieNum)))
+legend("topright", c("True","False"), cex = 0.8, fill = rainbow(length(pieNum)))
 ```
 
-
-
-
+```{r}
+# Special Day data
+specialDay = ggplot(online, aes(SpecialDay)) + geom_density(color="darkblue", fill="lightblue")
+specialDay
+# scatterSpecialDay = ggplot(online, aes(Revenue, SpecialDay)) + geom_violin(), this plot had no significance
+```
 
 
