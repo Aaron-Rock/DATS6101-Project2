@@ -28,26 +28,21 @@ options(scientific=T, digits = 3)
 online = data.frame(read.csv("online_shoppers_intention.csv"))
 head(online)
 ```
-
 ```{r, results='hide'}
 # Handling categorical variables prior to plotting
-online$Revenue = as.integer(online$Revenue)
-online$Weekend = as.integer(online$Weekend)
-online$Month = as.integer(factor(online$Month, levels = month.abb))
+online$Month = as.factor(online$Month)
+online$Revenue = as.factor(online$Revenue)
+online$Weekend = as.factor(online$Weekend)
+online$VisitorType = as.factor(online$VisitorType)
 ```
-
 
 ``` {r}
 monthFrequency = ggplot(online, aes(x=Month, color=Month, fill=Month)) + geom_bar()
 monthFrequency
-
 userCount = ggplot(online, aes(x=VisitorType, color=VisitorType, fill=VisitorType)) + geom_bar()
 userCount
-
 revCount = ggplot(online, aes(x=Revenue, color=Revenue, fill=Revenue)) + geom_bar()
 revCount
-
-
 revTrue = subset(online, online$Revenue == TRUE)
 revFalse = subset(online, online$Revenue == FALSE)
 pieNum <- c(nrow(revTrue), nrow(revFalse))
@@ -55,7 +50,6 @@ piepercent<- round(100*pieNum/sum(pieNum), 1)
 pie(pieNum, labels = piepercent, main = "Revenue Percentages",col = rainbow(length(pieNum)))
 legend("topright", c("True","False"), cex = 0.8, fill = rainbow(length(pieNum)))
 ```
-
 ```{r}
 # Special Day data
 specialDay = ggplot(online, aes(SpecialDay)) + geom_density(color="darkblue", fill="lightblue")
@@ -71,6 +65,7 @@ infoDur
 prodDur = ggplot(online, aes(ProductRelated_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30)
 prodDur
 ```
+
 ```{r}
 # Bounce Rate is measured by total one page visits divided by total visits 
 bounceBox = ggplot(online, aes(BounceRates)) + geom_boxplot(color='blue')
@@ -84,28 +79,29 @@ The average Exit Rate for this site is `r mean(online$ExitRates)*100`%.
 
 For our dataset it would be better to see individual page exit and bounce rates. The column variables Exit and Bounce Rates are the average of these metrics over each page on this site.
 
+
 ```{r}
 online_new = subset(online, select = -c(VisitorType, Month))
+online_new$Weekend = as.numeric(online_new$Weekend)
+online_new$Revenue = as.numeric(online_new$Revenue)
 corrOnline <- cor(online_new)
 corrplot(corrOnline, method="number",number.cex=0.5,tl.cex=.6)
 ```
 
 
-```{r, results='hide'}
-# Handling categorical variables prior to plotting
-online$Month = as.factor(online$Month)
-online$Revenue = as.factor(online$Revenue)
-online$Weekend = as.factor(online$Weekend)
-online$VisitorType = as.factor(online$VisitorType)
-online$OperatingSystems = as.factor(online$OperatingSystems)
-online$Browser = as.factor(online$Browser)
-online$Region = as.factor(online$Region)
-online$TrafficType = as.factor(online$TrafficType)
+```{r}
+monthTable = xtabs( ~ Revenue + Month, data = online)
+monthTable
+chisqMonth = chisq.test(monthTable)
+chisqMonth
 ```
 
-
-
-
+```{r}
+specialDayTable = xtabs( ~ Revenue + SpecialDay, data = online)
+specialDayTable
+chisqSD = chisq.test(specialDayTable)
+chisqSD
+```
 
 
 
