@@ -96,9 +96,45 @@ ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
   theme_ipsum() 
 ```
 
-```{r, results='markup', fig.align="center", fig.width = 10, fig.height=10}
+```{r, results='markup', fig.align="center", fig.width = 10, fig.height=8}
 # corPlot(df, cex = 1.2)
 pairs.panels(df)
+```
+
+```{r, results='markup'}
+os_contable = table(df_orig$Revenue, df_orig$OperatingSystems)
+os_contable
+chisq.test(os_contable, simulate.p.value=T)
+```
+
+```{r, results='markup'}
+br_contable = table(df_orig$Revenue, df_orig$Browser)
+br_contable
+chisq.test(br_contable, simulate.p.value=T)
+```
+
+```{r, results='markup'}
+rg_contable = table(df_orig$Revenue, df_orig$Region)
+rg_contable
+chisq.test(rg_contable, simulate.p.value=F)
+```
+
+```{r, results='markup'}
+Tt_contable = table(df_orig$Revenue, df_orig$TrafficType)
+Tt_contable
+chisq.test(Tt_contable, simulate.p.value=T)
+```
+
+```{r, results='markup'}
+Vt_contable = table(df_orig$Revenue, df_orig$VisitorType)
+Vt_contable
+chisq.test(Vt_contable, simulate.p.value=F)
+```
+
+```{r, results='markup'}
+wk_contable = table(df_orig$Revenue, df_orig$Weekend)
+wk_contable
+chisq.test(wk_contable, simulate.p.value=F)
 ```
 
 ```{r, results='markup'}
