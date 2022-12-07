@@ -8,12 +8,13 @@ output: html_document
 # some of common options (and the defaults) are: 
 # include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
 library(ezids)
-library(tidyverse)
+library(gmodels)
 library(ggplot2)
 library(dplyr)
 install.packages("matrixStats")
 library(matrixStats)
 library(corrplot)
+library(FNN)
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
 options(scientific=T, digits = 3) 
@@ -26,7 +27,9 @@ options(scientific=T, digits = 3)
 ```{r}
 #First, load the file
 online = data.frame(read.csv("online_shoppers_intention.csv"))
+original_online = data.frame(read.csv("online_shoppers_intention.csv"))
 head(online)
+
 ```
 ```{r, results='hide'}
 # Handling categorical variables prior to plotting
@@ -103,7 +106,73 @@ chisqSD = chisq.test(specialDayTable)
 chisqSD
 ```
 
+```{r, results='hide'}
+# Rehandle
+online$VisitorType = as.factor(online$VisitorType)
+online$Weekend = as.integer(online$Weekend)
+online$OperatingSystems = as.integer(online$OperatingSystems)
+online$Browser = as.integer(online$Browser)
+online$TrafficType = as.integer(online$TrafficType)
+online$Region = as.integer(online$Region)
+online$Month = as.integer(factor(online$Month, levels = month.abb))
+online = subset(online, select=-c(VisitorType))
+online = drop_na(online)
+```
+
+```{r}
+scaledOnline <- as.data.frame(scale(online[1:16], center = TRUE, scale = TRUE))
+```
+
+```{r}
+set.seed(1000)
+online_sample <- sample(2, nrow(scaledOnline), replace=TRUE, prob=c(0.80, 0.20))
+```
 
 
+```{r}
+online_training <- scaledOnline[online_sample==1, 1:16]
+online_test <- scaledOnline[online_sample==2, 1:16]
+```
 
+
+```{r}
+online_trainLabels <- online[online_sample==1, 17]
+online_testLabels <- online[online_sample==2, 17]
+```
+
+```{r, results='hide'}
+online_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=7)
+online_pred
+```
+
+```{r results='markup'}
+onlineCrossTable <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
+```  
+
+```{r}
+for (kval in 5:15) {
+  iris_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=kval)
+  onlinePREDCross <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
+  print( paste("k = ", kval) )
+  onlinePREDCross
+  # 
+  cm = confusionMatrix(online_pred, reference = online_testLabels ) # from caret library
+  # print.confusionMatrix(cm)
+  # 
+  cmaccu = cm$overall['Accuracy']
+  print( paste("Total Accuracy = ", cmaccu ) )
+  # print("Other metrics : ")
+  # print(cm$byClass)
+  # 
+  cmt = data.frame(k=kval, Total.Accuracy = cmaccu, row.names = NULL ) # initialize a row of the metrics 
+  # cmt = cbind( cmt, data.frame( t(cm$byClass) ) ) # the dataframe of the transpose, with k valued added in front
+  ResultDf = rbind(ResultDf, cmt)
+  print( xkabledply(   as.matrix(cm), title = paste("ConfusionMatrix for k = ",kval ) ) )
+  print( xkabledply(data.frame(cm$byClass), title=paste("k = ",kval)) )
+}
+``` 
+
+```{r, results='markup'}
+xkabledply(ResultDf, "Total Accuracy Summary")
+```
 
