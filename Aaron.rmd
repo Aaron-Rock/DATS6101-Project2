@@ -115,57 +115,59 @@ online$Browser = as.integer(online$Browser)
 online$TrafficType = as.integer(online$TrafficType)
 online$Region = as.integer(online$Region)
 online$Month = as.integer(factor(online$Month, levels = month.abb))
-online = subset(online, select=-c(VisitorType))
+#online = subset(online, select=-c(VisitorType))
 online = drop_na(online)
+
+# Making Visitor Type into numerical variable
+online$VisitorType <- str_replace(online$VisitorType,'New_Visitor','1')
+online$VisitorType <- str_replace(online$VisitorType,'Other','2')
+online$VisitorType <- str_replace(online$VisitorType,'Returning_Visitor','3')
+online$VisitorType = as.numeric(online$VisitorType)
 ```
 
 ```{r}
-scaledOnline <- as.data.frame(scale(online[1:16], center = TRUE, scale = TRUE))
+scaledOnline <- as.data.frame(scale(online[1:17], center = TRUE, scale = TRUE))
 ```
 
 ```{r}
-set.seed(1000)
+set.seed(1)
 online_sample <- sample(2, nrow(scaledOnline), replace=TRUE, prob=c(0.80, 0.20))
 ```
 
 
 ```{r}
-online_training <- scaledOnline[online_sample==1, 1:16]
-online_test <- scaledOnline[online_sample==2, 1:16]
+online_training <- scaledOnline[online_sample==1, 1:17]
+online_test <- scaledOnline[online_sample==2, 1:17]
 ```
 
 
 ```{r}
-online_trainLabels <- online[online_sample==1, 17]
-online_testLabels <- online[online_sample==2, 17]
+online_trainLabels <- online[online_sample==1, 18]
+online_testLabels <- online[online_sample==2, 18]
 ```
 
 ```{r, results='hide'}
-online_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=7)
-online_pred
+#online_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=7)
+#online_pred
 ```
 
-```{r results='markup'}
-onlineCrossTable <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
-```  
+```{r, results='hide'}
+ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
+```
 
 ```{r}
-for (kval in 5:15) {
-  iris_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=kval)
+for (kval in 5:25) {
+  online_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=kval)
   onlinePREDCross <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
   print( paste("k = ", kval) )
   onlinePREDCross
-  # 
-  cm = confusionMatrix(online_pred, reference = online_testLabels ) # from caret library
-  # print.confusionMatrix(cm)
-  # 
+  
+  cm = confusionMatrix(online_pred, reference = online_testLabels ) 
+
   cmaccu = cm$overall['Accuracy']
   print( paste("Total Accuracy = ", cmaccu ) )
-  # print("Other metrics : ")
-  # print(cm$byClass)
-  # 
-  cmt = data.frame(k=kval, Total.Accuracy = cmaccu, row.names = NULL ) # initialize a row of the metrics 
-  # cmt = cbind( cmt, data.frame( t(cm$byClass) ) ) # the dataframe of the transpose, with k valued added in front
+   
+  cmt = data.frame(k=kval, Total.Accuracy = cmaccu, row.names = NULL )  
   ResultDf = rbind(ResultDf, cmt)
   print( xkabledply(   as.matrix(cm), title = paste("ConfusionMatrix for k = ",kval ) ) )
   print( xkabledply(data.frame(cm$byClass), title=paste("k = ",kval)) )
@@ -176,3 +178,7 @@ for (kval in 5:15) {
 xkabledply(ResultDf, "Total Accuracy Summary")
 ```
 
+```{r}
+kPlot = ggplot(ResultDf, aes(k, Total.Accuracy)) + geom_point() + geom_line()
+kPlot
+```
