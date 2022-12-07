@@ -11,7 +11,7 @@ library(ezids)
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
-install.packages("matrixStats")
+# install.packages("matrixStats")
 library(matrixStats)
 library(psych)
 library(hrbrthemes)
@@ -138,6 +138,36 @@ chisq.test(wk_contable, simulate.p.value=F)
 ```
 
 ```{r, results='markup'}
+loadPkg("rpart")
+set.seed(1234)
 
+dtree_model <- rpart(Revenue ~ . - Region, data=df, method="class", control = list(maxdepth = 8, cp = 0.01))
+printcp(dtree_model)
+```
+
+```{r, results='markup'}
+plotcp(dtree_model)
+```
+
+```{r, results='markup'}
+# summary(dtree_model)
+```
+
+```{r, results='markup'}
+# plot(dtree_model, uniform=TRUE, main="Classification Tree for Kyphosis")
+# text(dtree_model, use.n=TRUE, all=TRUE, cex=.8, )
+# post(dtree_model, file = "kythosisTree2.ps", title = "Classification Tree for Kythosis")
+# loadPkg("rpart.plot")
+# rpart.plot(dtree_model)
+```
+
+```{r, results='markup'}
+loadPkg("rattle") # For fancyRpartPlot (Trees) Answer "no" on installing from binary source
+fancyRpartPlot(dtree_model)
+```
+
+```{r, results='markup'}
+loadPkg("caret") 
+cm = confusionMatrix(predict(dtree_model, type = "class"), reference = dtree_model[, "Revenue"] )
 ```
 
