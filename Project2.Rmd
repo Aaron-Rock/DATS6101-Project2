@@ -1,0 +1,191 @@
+---
+title: "Project 2"
+author: "Jeffrey Hu"
+# date: "today"
+date: "12/4/2022"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r init, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+library(ezids)
+library(ModelMetrics)
+library(pROC)
+library(ResourceSelection)
+library(pscl)
+library(ggplot2)
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# ‘scipen’: integer. A penalty to be applied when deciding to print numeric values in fixed or exponential notation.  Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than ‘scipen’ digits wider.
+# use scipen=999 to prevent scientific notation at all times
+```
+
+# Online Shoppers Dataset  
+
+## Data reading and cleaning  
+
+### Question 1
+
+**Import the dataset into R**  
+
+```{r, results='markup'}
+online_shoppers <- data.frame(read.csv("online_shoppers_intention.csv"))
+str(online_shoppers)
+dim(online_shoppers)
+```
+
+### Question 2 
+**Age**  
+There are no NAs in the dataset, and no ommissions in the end.
+
+```{r, results='markup'}
+which(is.na(online_shoppers))
+online_shoppers <- na.omit(online_shoppers)
+str(online_shoppers)
+```
+
+### Question 3  
+**More clean up**  
+Some of the features are not in their correct data type. We will factorize some of the variables. Some of the factored features have lots of levels, which could be a problem when designing models with dummies and increase computing expense.
+
+```{r, results='markup'}
+online_shoppers$OperatingSystems = factor(online_shoppers$OperatingSystems)
+online_shoppers$Browser = factor(online_shoppers$Browser)
+online_shoppers$Region = factor(online_shoppers$Region)
+online_shoppers$TrafficType = factor(online_shoppers$TrafficType)
+online_shoppers$VisitorType = factor(online_shoppers$VisitorType)
+# online_shoppers$Month = factor(online_shoppers$Month)
+str(online_shoppers)
+```
+
+## EDA Pre-logistic Regression
+
+Let's do an initial mixed corrplot to see the relationship between the features and the possibility of generating revenue. We will only look at the numerical/ordinal factors without the factors.
+
+```{r, results='markup'}
+library(corrplot)
+online_shoppers_num = subset(online_shoppers, select = -c(Month, OperatingSystems, Browser, Region, TrafficType, VisitorType))
+online_shoppers_num$Weekend = as.numeric(online_shoppers_num$Weekend)
+online_shoppers_num$Revenue = as.numeric(online_shoppers_num$Revenue)
+str(online_shoppers_num)
+shop_corr <- cor(online_shoppers_num)
+corrplot.mixed(shop_corr)
+```
+
+We observed some very obvious correlation between things like the number of administrative pages visited and the amount of time each visitor spent on administrative pages, which is expected just like promotional/promotional_duration and productedRelated/productRelated_Duration.
+
+The highest correlation with our response is the PageValues, which had a .49 correlation with Revenue. Again, this higher correlation makes sense because the PageValues feature is an average value/metric of the page visited before the user completed a transaction. This is expected, as pagevalues We will do some more EDA on that.
+
+Other than that, the Bounce and Exit Rates both have a negative correlation with the likelihood of generating revenue, while users that visited productRelated pages seems to more likely generate revenue over users that visited admin pages.
+
+From the t-test, we reject the null, and bring strong evidence to support the alternative hypothesis that the PageValue has a strong effect on whether or not the shopper buys.
+```{r, results='markup'}
+online_shopper_bought <- online_shoppers[which(online_shoppers$Revenue==TRUE),]
+online_shopper_not <- online_shoppers[which(online_shoppers$Revenue==FALSE),]
+t.test(online_shopper_bought$PageValues, online_shopper_not$PageValues, conf.level = .95)
+```
+
+
+```{r, results='markup'}
+#chisq.test(titanic$survived, titanic$sex, correct=FALSE)
+```
+
+Here, with a p-value far below the alpha of 0.05, we find evidence to reject the null and support the alternative idea, that `sex` does have an effect on `survival`.
+
+Another big question is, does the data support ticket class `pclass` has an effect on `survival`? 
+
+```{r, results='markup'}
+#chisq.test(titanic$survived, titanic$pclass, correct=FALSE)
+```
+
+It seems like, with a p value below the alpha of 0.05, that `pclass` also has a significant effect on `survival`. We find evidence to reject the null and support the alternative, that there is a relationship between the variables.
+
+## Logistic Regression
+
+### Question 7   
+**Survival and age + pclass**  
+Now let us build a logit model with `age + pclass` as predictors, and analyze the results. Is the model a good one? Support your answer with appropriate model evaluation(s).  Comment on statistical significant of coefficients, accuracy/confusion matrix, McFadden's value, ROC/AUC, ... 
+
+```{r, results='markup'}
+attach(online_shoppers)
+ShopLogit <- glm(Revenue ~ PageValues + ProductRelated + Informational + Administrative, family = "binomial")
+summary(ShopLogit)
+xkabledply(confusionMatrix(actual=ShopLogit$y,predicted=ShopLogit$fitted.values), title = "Confusion Matrix")
+prob = predict(ShopLogit, type = "response")
+online_shoppers$prob = prob
+h <- roc(Revenue~prob)
+auc(h)
+plot(h)
+ShopperNullLogit <- glm(Revenue ~ 1, family = "binomial")
+mcFadden = 1 - logLik(ShopLogit)/logLik(ShopperNullLogit)
+mcFadden
+pR2(ShopLogit)
+```
+
+This model is okay, but I wouldn't say it's a good model. The coefficients are all statistically significant, and the AIC is 835.16. Off of the confusion matrix, the accuracy of the model is about .695, the recall is about .714, and the precision is about .811. The AUC is .7447, which is lower than 0.8, which is more evidence that it's not the strongest model. Finally, the mcFadden is quite low at 0.1424, and the other psuedo R-squared values are low as well.
+
+
+### Question 8  
+**More features**  
+Can we improve the model? Let us also throw in `sex` as a predictor. How’s the model now?  Comment on deviance tests for model comparions, statistical significant of coefficients, accuracy/confusion matrix, McFadden's value, ROC/AUC, ... 
+
+```{r, results='markup'}
+titanicLogit <- glm(survived ~ age + pclass + sex, family = "binomial")
+summary(titanicLogit)
+xkabledply(confusionMatrix(actual=titanicLogit$y,predicted=titanicLogit$fitted.values), title = "Confusion Matrix")
+prob = predict(titanicLogit, type = "response")
+titanic$prob = prob
+h <- roc(survived~prob)
+auc(h)
+plot(h)
+pR2(titanicLogit)
+pvalue = pchisq(827.16 - 647.28, 710 - 709, lower.tail=F)
+pvalue
+```
+
+The model seems to be significantly improved with the addition of `sex` as a predictor. The coefficients are all statistically significant. Notably, the residual deviance and AIC are both lower than the previous model. The accuracy, recall, and precision are all raised, at .789, .811, and .84 respectively. The AUC is .8523, which is above .8, and the McFadden is raised to about .329. And finally, when we compare the residual deviances of both models, the p-value is much lower than the alpha of 0.05, which lends support in favor of the new model.
+
+### Question 9  
+**Sample Predictions**  
+According to the last model, what is the probability of survival for a female, age 10, second class passenger? And a male, age 20, first class passenger?
+
+```{r, eval='hide'}
+newdata1 <- with(titanic, data.frame(age = 10, sex = 'female', pclass = 2))
+newdata1$sex = factor(newdata1$sex)
+newdata1$pclass = factor(newdata1$pclass)
+newdata1$survivedP <- predict(titanicLogit, newdata = newdata1, type = "response")
+newdata1$survivedP
+newdata1 <- with(titanic, data.frame(age = 20, sex = 'male', pclass = 1))
+newdata1$sex = factor(newdata1$sex)
+newdata1$pclass = factor(newdata1$pclass)
+newdata1$survivedP <- predict(titanicLogit, newdata = newdata1, type = "response")
+newdata1$survivedP
+```
+
+From the estimates of the model, a female 10 year old second class passenger had a .89 chance of surviving, while a male 20 year old first class passenger had a .626 chance of surviving.
+
+## Interpretation  
+
+### Question 10  
+**Summary**  
+With all the results you obtained above, how would you present a high-level summary of the findings? Are the results surprising or expected? 
+
+
+With over a .85 AUC, I would say that the second model is a pretty good fit for the dataset, and from the accuracy, recall, and precision of the model, could generally give an accurate prediction of the survival of a passenger given their age, passenger class, and gender. Still, the pseudo R-squared values are not low, but could indicate that there are more variables in play that determine the survival of a passenger.
+
+
+I found it surprising that the average age of those who survived compare to those who died were only 2 years apart, and a 20 year old male first class passenger actually had a higher than 50% rate of survival. Still, it was expected that being older, male, or a 2nd/3rd class passenger would result in a higher chance of death in respect to the second model.
+
+
