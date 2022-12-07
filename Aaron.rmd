@@ -13,6 +13,7 @@ library(ggplot2)
 library(dplyr)
 install.packages("matrixStats")
 library(matrixStats)
+library(corrplot)
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
 options(scientific=T, digits = 3) 
@@ -30,11 +31,11 @@ head(online)
 
 ```{r, results='hide'}
 # Handling categorical variables prior to plotting
-online$Month = as.factor(online$Month)
-online$Revenue = as.factor(online$Revenue)
-online$Weekend = as.factor(online$Weekend)
-online$VisitorType = as.factor(online$VisitorType)
+online$Revenue = as.integer(online$Revenue)
+online$Weekend = as.integer(online$Weekend)
+online$Month = as.integer(factor(online$Month, levels = month.abb))
 ```
+
 
 ``` {r}
 monthFrequency = ggplot(online, aes(x=Month, color=Month, fill=Month)) + geom_bar()
@@ -82,4 +83,31 @@ The average Bounce Rate for this site is `r mean(online$BounceRates)*100`%.
 The average Exit Rate for this site is `r mean(online$ExitRates)*100`%.
 
 For our dataset it would be better to see individual page exit and bounce rates. The column variables Exit and Bounce Rates are the average of these metrics over each page on this site.
+
+```{r}
+online_new = subset(online, select = -c(VisitorType, Month))
+corrOnline <- cor(online_new)
+corrplot(corrOnline, method="number",number.cex=0.5,tl.cex=.6)
+```
+
+
+```{r, results='hide'}
+# Handling categorical variables prior to plotting
+online$Month = as.factor(online$Month)
+online$Revenue = as.factor(online$Revenue)
+online$Weekend = as.factor(online$Weekend)
+online$VisitorType = as.factor(online$VisitorType)
+online$OperatingSystems = as.factor(online$OperatingSystems)
+online$Browser = as.factor(online$Browser)
+online$Region = as.factor(online$Region)
+online$TrafficType = as.factor(online$TrafficType)
+```
+
+
+
+
+
+
+
+
 
