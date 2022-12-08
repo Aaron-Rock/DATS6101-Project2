@@ -296,7 +296,7 @@ auc(h_selected)
 plot(h_selected)
 ```
 
-Sadly, both models do not meet the cut off AUC metric of 0.8. We can see from the Confusion Matrix that when the models are at the optimal k value the total accuracy are in the high 80 percent levels. However, the issue we need to address is the 
+Sadly, both models do not meet the cut off AUC metric of 0.8. We can see from the Confusion Matrix that when the models are at the optimal k value the total accuracy are in the high 80 percent levels. However, the issue we need to address is the specificity that is measured by taking the true negatives divided by the true negatives plus the false positives. For both models we built we can see that there are small specificity rates.
 
 
 
