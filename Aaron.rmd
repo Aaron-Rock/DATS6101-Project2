@@ -29,7 +29,6 @@ options(scientific=T, digits = 3)
 online = data.frame(read.csv("online_shoppers_intention.csv"))
 original_online = data.frame(read.csv("online_shoppers_intention.csv"))
 head(online)
-
 ```
 ```{r, results='hide'}
 # Handling categorical variables prior to plotting
@@ -107,6 +106,7 @@ chisqSD
 ```
 
 ```{r, results='hide'}
+library(tidyr)
 # Rehandle
 online$VisitorType = as.factor(online$VisitorType)
 online$Weekend = as.integer(online$Weekend)
@@ -115,10 +115,9 @@ online$Browser = as.integer(online$Browser)
 online$TrafficType = as.integer(online$TrafficType)
 online$Region = as.integer(online$Region)
 online$Month = as.integer(factor(online$Month, levels = month.abb))
-#online = subset(online, select=-c(VisitorType))
 online = drop_na(online)
-
 # Making Visitor Type into numerical variable
+library(tidyverse)
 online$VisitorType <- str_replace(online$VisitorType,'New_Visitor','1')
 online$VisitorType <- str_replace(online$VisitorType,'Other','2')
 online$VisitorType <- str_replace(online$VisitorType,'Returning_Visitor','3')
@@ -130,7 +129,7 @@ scaledOnline <- as.data.frame(scale(online[1:17], center = TRUE, scale = TRUE))
 ```
 
 ```{r}
-set.seed(1)
+set.seed(123)
 online_sample <- sample(2, nrow(scaledOnline), replace=TRUE, prob=c(0.80, 0.20))
 ```
 
@@ -147,11 +146,6 @@ online_testLabels <- online[online_sample==2, 18]
 ```
 
 ```{r, results='hide'}
-#online_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=7)
-#online_pred
-```
-
-```{r, results='hide'}
 ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
 ```
 
@@ -163,7 +157,6 @@ for (kval in 5:25) {
   onlinePREDCross
   
   cm = confusionMatrix(online_pred, reference = online_testLabels ) 
-
   cmaccu = cm$overall['Accuracy']
   print( paste("Total Accuracy = ", cmaccu ) )
    
@@ -182,3 +175,20 @@ xkabledply(ResultDf, "Total Accuracy Summary")
 kPlot = ggplot(ResultDf, aes(k, Total.Accuracy)) + geom_point() + geom_line()
 kPlot
 ```
+
+```{r}
+# Max Accuracy
+online_pred_max <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=15)
+onlinePREDCross_max <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
+```
+
+
+```{r}
+loadPkg("pROC")
+h <- roc(online_testLabels , as.integer(online_pred_max))
+auc(h)
+plot(h)
+```
+
+
+
