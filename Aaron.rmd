@@ -124,13 +124,45 @@ online$VisitorType <- str_replace(online$VisitorType,'Returning_Visitor','3')
 online$VisitorType = as.numeric(online$VisitorType)
 ```
 
+
+```{r, results='hide'}
+# PageValues + Month + ExitRates + ProductRelated_Duration + TrafficType + VisitorType + ProductRelated
+original_online$VisitorType = as.factor(original_online$VisitorType)
+original_online$Weekend = as.integer(original_online$Weekend)
+original_online$OperatingSystems = as.integer(original_online$OperatingSystems)
+original_online$Browser = as.integer(original_online$Browser)
+original_online$TrafficType = as.integer(original_online$TrafficType)
+original_online$Region = as.integer(original_online$Region)
+original_online$Month = as.integer(factor(original_online$Month, levels = month.abb))
+original_online = drop_na(online)
+# Making Visitor Type into numerical variable
+
+original_online$VisitorType <- str_replace(original_online$VisitorType,'New_Visitor','1')
+original_online$VisitorType <- str_replace(original_online$VisitorType,'Other','2')
+original_online$VisitorType <- str_replace(original_online$VisitorType,'Returning_Visitor','3')
+original_online$VisitorType = as.numeric(original_online$VisitorType)
+
+original_online = subset(original_online, select = -c(1,2,3,4,7,10,12,13,14,17))
+```
+
 ```{r}
 scaledOnline <- as.data.frame(scale(online[1:17], center = TRUE, scale = TRUE))
 ```
 
 ```{r}
+# Selected Variables based off EDA
+scaled_Online_select <- as.data.frame(scale(original_online[1:7], center = TRUE, scale = TRUE))
+```
+
+```{r}
 set.seed(123)
 online_sample <- sample(2, nrow(scaledOnline), replace=TRUE, prob=c(0.80, 0.20))
+```
+
+```{r}
+# Selected Variables Model based off EDA
+set.seed(123)
+online_sample_selected <- sample(2, nrow(scaled_Online_select), replace=TRUE, prob=c(0.8, 0.2))
 ```
 
 
@@ -139,14 +171,28 @@ online_training <- scaledOnline[online_sample==1, 1:17]
 online_test <- scaledOnline[online_sample==2, 1:17]
 ```
 
+```{r}
+# Selected Variables Model based off EDA
+online_training_selected <- scaled_Online_select[online_sample_selected==1, 1:7]
+online_test_selected <- scaled_Online_select[online_sample_selected==2, 1:7]
+```
+
 
 ```{r}
 online_trainLabels <- online[online_sample==1, 18]
 online_testLabels <- online[online_sample==2, 18]
 ```
 
+```{r}
+# Selected Variables Model based off EDA
+online_trainLabels_selected <- original_online[online_sample_selected==1, 8]
+online_testLabels_selected <- original_online[online_sample_selected==2, 8]
+```
+
 ```{r, results='hide'}
 ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
+
+ResultDf_selected = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
 ```
 
 ```{r}
@@ -167,19 +213,48 @@ for (kval in 5:25) {
 }
 ``` 
 
+```{r}
+# Selected Variable Model
+for (kval in 10:30) {
+  online_pred_selected <- knn(train = online_training_selected, test = online_test_selected, cl=online_trainLabels_selected, k=kval)
+  onlinePREDCross_selected <- CrossTable(online_testLabels_selected, online_pred_selected, prop.chisq = FALSE)
+  print( paste("k = ", kval) )
+  onlinePREDCross_selected
+  
+  cm_selected = confusionMatrix(online_pred_selected, reference = online_testLabels_selected ) 
+  cmaccu_selected = cm_selected$overall['Accuracy']
+  print( paste("Total Accuracy = ", cmaccu_selected ) )
+   
+  cmt_selected = data.frame(k=kval, Total.Accuracy = cmaccu_selected, row.names = NULL )  
+  ResultDf_selected = rbind(ResultDf_selected, cmt_selected)
+  print( xkabledply(   as.matrix(cm_selected), title = paste("ConfusionMatrix for k = ",kval ) ) )
+  print( xkabledply(data.frame(cm_selected$byClass), title=paste("k = ",kval)) )
+}
+``` 
+
 ```{r, results='markup'}
 xkabledply(ResultDf, "Total Accuracy Summary")
+# Selected Variable Model
+xkabledply(ResultDf_selected, "Total Accuracy Summary")
 ```
+
 
 ```{r}
 kPlot = ggplot(ResultDf, aes(k, Total.Accuracy)) + geom_point() + geom_line()
 kPlot
+
+kPlot_selected = ggplot(ResultDf_selected, aes(k, Total.Accuracy)) + geom_point() + geom_line()
+kPlot_selected
 ```
 
 ```{r}
 # Max Accuracy
 online_pred_max <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=15)
 onlinePREDCross_max <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
+
+# Selected Variable Model
+online_pred_max_selected <- knn(train = online_training_selected, test = online_test_selected, cl=online_trainLabels_selected, k=25)
+onlinePREDCross_max_selected <- CrossTable(online_testLabels_selected, online_pred_selected, prop.chisq = FALSE)
 ```
 
 
@@ -188,6 +263,10 @@ loadPkg("pROC")
 h <- roc(online_testLabels , as.integer(online_pred_max))
 auc(h)
 plot(h)
+
+h_selected <- roc(online_testLabels_selected , as.integer(online_pred_max_selected))
+auc(h_selected)
+plot(h_selected)
 ```
 
 
