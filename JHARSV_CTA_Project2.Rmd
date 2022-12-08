@@ -1,6 +1,6 @@
 ---
 title: "Project 2"
-author: "Jeffrey Hu"
+author: "Jeffrey Hu, Aaron Rock, Sanchit Vijay"
 # date: "today"
 date: "12/4/2022"
 output:
