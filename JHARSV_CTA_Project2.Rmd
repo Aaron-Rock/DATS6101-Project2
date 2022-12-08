@@ -98,16 +98,6 @@ t.test(online_shopper_bought$PageValues, online_shopper_not$PageValues, conf.lev
 ```
 
 
-```{r, results='markup'}
-#chisq.test(titanic$survived, titanic$sex, correct=FALSE)
-```
-
-
-```{r, results='markup'}
-#chisq.test(titanic$survived, titanic$pclass, correct=FALSE)
-```
-
-
 ## Logistic Regression
 
 ### Question 7   
