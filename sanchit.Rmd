@@ -149,31 +149,8 @@ train <- df[df_sample==1, ]
 test <- df[df_sample==2, ]
 ```
 
-```{r, results='markup'}
-loadPkg("rpart")
-
-dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth=30, cp=0.01))
-printcp(dtree_model)
-```
-
 
 ```{r, results='markup'}
-loadPkg("caret") 
-cm = confusionMatrix(predict(dtree_model, test, type = "class"), reference = test$Revenue, positive = "2")
-cm
-```
-
-```{r, results='markup'}
-library(pROC)
-
-prob = predict(dtree_model, test, type = "class")
-# df$prob=prob
-h <- roc(test$Revenue ~ as.numeric(prob))
-auc(h) # area-under-curve prefer 0.8 or higher.
-plot(h)
-```
-
-```{r}
 confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
 
 for (deep in 2:7) {
@@ -196,19 +173,11 @@ xkabledply(confusionMatrixResultDf, title="Kyphosis Classification Trees summary
 
 ```{r, results='markup'}
 dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth = 6, cp=0.005) )
+confusionMatrix( predict(dtree_model, test, type = "class"), reference = test[, "Revenue"], positive = "2")
+```
+
+```{r, results='markup'}
 plotcp(dtree_model)
-```
-
-```{r, results='markup'}
-# summary(dtree_model)
-```
-
-```{r, results='markup'}
-# plot(dtree_model, uniform=TRUE, main="Classification Tree for Kyphosis")
-# text(dtree_model, use.n=TRUE, all=TRUE, cex=.8, )
-# post(dtree_model, file = "kythosisTree2.ps", title = "Classification Tree for Kythosis")
-# loadPkg("rpart.plot")
-# rpart.plot(dtree_model)
 ```
 
 ```{r, results='markup'}
@@ -217,6 +186,8 @@ fancyRpartPlot(dtree_model)
 ```
 
 ```{r, results='markup'}
+library(pROC)
+
 prob = predict(dtree_model, test, type = "class")
 # df$prob=prob
 h <- roc(test$Revenue ~ as.numeric(prob))
@@ -231,10 +202,29 @@ table(train_new$Revenue)
 ```
 
 ```{r, results='markup'}
-dtree_model <- rpart(Revenue ~ . - Region, data=train_new, method="class", control = list(maxdepth = 6, cp=0.005) )
+confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
+
+for (deep in 2:10) {
+  tree_fit <- rpart(Revenue ~ . - Region, data=train_new, method="class", control = list(maxdepth = deep, cp=0.001) )
+  # 
+  cm = confusionMatrix( predict(tree_fit, test, type = "class"), reference = test[, "Revenue"], positive = "2") # from caret library
+  # 
+  cmaccu = cm$overall['Accuracy']
+  # print( paste("Total Accuracy = ", cmaccu ) )
+  # 
+  cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL ) # initialize a row of the metrics 
+  cmt = cbind( cmt, data.frame( t(cm$byClass) ) ) # the dataframe of the transpose, with k valued added in front
+  confusionMatrixResultDf = rbind(confusionMatrixResultDf, cmt)
+  # print("Other metrics : ")
+}
+
+xkabledply(confusionMatrixResultDf, title="Kyphosis Classification Trees summary with varying MaxDepth")
 ```
 
+
 ```{r, results='markup'}
+dtree_model <- rpart(Revenue ~ . - Region, data=train_new, method="class", control = list(maxdepth = 6, cp=0.001) )
+
 confusionMatrix(predict(dtree_model, test, type = "class"), reference = test$Revenue, positive = "2")
 ```
 
@@ -246,4 +236,7 @@ h <- roc(test$Revenue ~ as.numeric(prob))
 auc(h) # area-under-curve prefer 0.8 or higher.
 plot(h)
 ```
+
+
+
 
