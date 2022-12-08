@@ -151,7 +151,7 @@ test <- df[df_sample==2, ]
 ```{r, results='markup'}
 loadPkg("rpart")
 
-dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth=5, cp=0.001, minsplit=10), )
+dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth=5, cp=0.001), )
 printcp(dtree_model)
 ```
 
@@ -172,8 +172,29 @@ auc(h) # area-under-curve prefer 0.8 or higher.
 plot(h)
 ```
 
+```{r}
+confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
+
+for (deep in 2:7) {
+  tree_fit <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth = deep, cp=0.005) )
+  # 
+  cm = confusionMatrix( predict(tree_fit, test, type = "class"), reference = test[, "Revenue"], positive = "2") # from caret library
+  # 
+  cmaccu = cm$overall['Accuracy']
+  # print( paste("Total Accuracy = ", cmaccu ) )
+  # 
+  cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL ) # initialize a row of the metrics 
+  cmt = cbind( cmt, data.frame( t(cm$byClass) ) ) # the dataframe of the transpose, with k valued added in front
+  confusionMatrixResultDf = rbind(confusionMatrixResultDf, cmt)
+  # print("Other metrics : ")
+}
+
+xkabledply(confusionMatrixResultDf, title="Kyphosis Classification Trees summary with varying MaxDepth")
+```
+
 
 ```{r, results='markup'}
+dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth = 6, cp=0.005) )
 plotcp(dtree_model)
 ```
 
@@ -194,5 +215,12 @@ loadPkg("rattle") # For fancyRpartPlot (Trees) Answer "no" on installing from bi
 fancyRpartPlot(dtree_model)
 ```
 
+```{r, results='markup'}
+prob = predict(dtree_model, test, type = "class")
+# df$prob=prob
+h <- roc(test$Revenue ~ as.numeric(prob))
+auc(h) # area-under-curve prefer 0.8 or higher.
+plot(h)
+```
 
 
