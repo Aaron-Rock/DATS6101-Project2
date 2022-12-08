@@ -337,12 +337,15 @@ test <- df[df_sample==2, ]
 We will choose "maxdepth" parameter for our decision tree. For this we will be using original unbalanced dataset only.  
 
 ```{r, results='markup'}
+
+loadPkg("rpart")
+loadPkg("caret")
 confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Sensitivity=numeric(0), Specificity=numeric(0), Pos.Pred.Value=numeric(0), Neg.Pred.Value=numeric(0), Precision=numeric(0), Recall=numeric(0), F1=numeric(0), Prevalence=numeric(0), Detection.Rate=numeric(0), Detection.Prevalence=numeric(0), Balanced.Accuracy=numeric(0), row.names = NULL )
 
 for (deep in 2:7) {
-  tree_fit <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth = deep, cp=0.005) )
+  tree_fit <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth = deep, cp=0.005))
   # 
-  cm = confusionMatrix( predict(tree_fit, test, type = "class"), reference = test[, "Revenue"], positive = "2") # from caret library
+  cm = confusionMatrix(predict(tree_fit, test, type = "class"), reference = test$Revenue, positive = "2") # from caret library
   # 
   cmaccu = cm$overall['Accuracy']
   # print( paste("Total Accuracy = ", cmaccu ) )
@@ -439,6 +442,8 @@ Oversampling causes sensitivity to increase because FN is increased. AUC score i
 
 ```{r, results='markup'}
 fancyRpartPlot(dtree_model)
+
+unloadPkg("Caret")
 ```
 
 
