@@ -24,6 +24,8 @@ library(pROC)
 library(ResourceSelection)
 library(pscl)
 library(ggplot2)
+library(tidyverse)
+library(ISLR)
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
 options(scientific=T, digits = 3) 
@@ -36,9 +38,7 @@ options(scientific=T, digits = 3)
 
 ## Data reading and cleaning  
 
-### Question 1
-
-**Import the dataset into R**  
+### Importing the dataset
 
 ```{r, results='markup'}
 online_shoppers <- data.frame(read.csv("online_shoppers_intention.csv"))
@@ -46,8 +46,7 @@ str(online_shoppers)
 dim(online_shoppers)
 ```
 
-### Question 2 
-**Age**  
+### Cleaning up the NAs
 There are no NAs in the dataset, and no ommissions in the end.
 
 ```{r, results='markup'}
@@ -56,8 +55,7 @@ online_shoppers <- na.omit(online_shoppers)
 str(online_shoppers)
 ```
 
-### Question 3  
-**More clean up**  
+### More clean up  
 Some of the features are not in their correct data type. We will factorize some of the variables. Some of the factored features have lots of levels, which could be a problem when designing models with dummies and increase computing expense.
 
 ```{r, results='markup'}
@@ -66,6 +64,8 @@ online_shoppers$Browser = factor(online_shoppers$Browser)
 online_shoppers$Region = factor(online_shoppers$Region)
 online_shoppers$TrafficType = factor(online_shoppers$TrafficType)
 online_shoppers$VisitorType = factor(online_shoppers$VisitorType)
+online_shoppers$Weekend = factor(online_shoppers$Weekend)
+online_shoppers$Revenue = factor(online_shoppers$Revenue)
 # online_shoppers$Month = factor(online_shoppers$Month)
 str(online_shoppers)
 ```
@@ -102,29 +102,25 @@ t.test(online_shopper_bought$PageValues, online_shopper_not$PageValues, conf.lev
 #chisq.test(titanic$survived, titanic$sex, correct=FALSE)
 ```
 
-Here, with a p-value far below the alpha of 0.05, we find evidence to reject the null and support the alternative idea, that `sex` does have an effect on `survival`.
-
-Another big question is, does the data support ticket class `pclass` has an effect on `survival`? 
 
 ```{r, results='markup'}
 #chisq.test(titanic$survived, titanic$pclass, correct=FALSE)
 ```
 
-It seems like, with a p value below the alpha of 0.05, that `pclass` also has a significant effect on `survival`. We find evidence to reject the null and support the alternative, that there is a relationship between the variables.
 
 ## Logistic Regression
 
 ### Question 7   
-**Survival and age + pclass**  
-Now let us build a logit model with `age + pclass` as predictors, and analyze the results. Is the model a good one? Support your answer with appropriate model evaluation(s).  Comment on statistical significant of coefficients, accuracy/confusion matrix, McFadden's value, ROC/AUC, ... 
+Basic Logistic Regression with PageValues and the three types of pages.
 
 ```{r, results='markup'}
+unloadPkg("caret")
 attach(online_shoppers)
-ShopLogit <- glm(Revenue ~ PageValues + ProductRelated + Informational + Administrative, family = "binomial")
+ShopLogit <- glm(Revenue ~ PageValues + ProductRelated + Informational + Administrative, data = online_shoppers, family = "binomial")
 summary(ShopLogit)
-xkabledply(confusionMatrix(actual=ShopLogit$y,predicted=ShopLogit$fitted.values), title = "Confusion Matrix")
+#kabledply(confusionMatrix(actual=ShopLogit$y,predicted=ShopLogit$fitted.values), title = "Confusion Matrix")
+confusionMatrix(actual=ShopLogit$y,predicted=ShopLogit$fitted.values)
 prob = predict(ShopLogit, type = "response")
-online_shoppers$prob = prob
 h <- roc(Revenue~prob)
 auc(h)
 plot(h)
@@ -132,60 +128,71 @@ ShopperNullLogit <- glm(Revenue ~ 1, family = "binomial")
 mcFadden = 1 - logLik(ShopLogit)/logLik(ShopperNullLogit)
 mcFadden
 pR2(ShopLogit)
+loadPkg("caret")
 ```
 
-This model is okay, but I wouldn't say it's a good model. The coefficients are all statistically significant, and the AIC is 835.16. Off of the confusion matrix, the accuracy of the model is about .695, the recall is about .714, and the precision is about .811. The AUC is .7447, which is lower than 0.8, which is more evidence that it's not the strongest model. Finally, the mcFadden is quite low at 0.1424, and the other psuedo R-squared values are low as well.
+This model looks to be a good model already. The coefficients are all statistically significant aside from the Informational pages, and the AIC is 7675.8. The AUC is .8883, which is higher than 0.8, which is evidence that the predictors are doing well in classifying the dataset.
 
 
 ### Question 8  
-**More features**  
-Can we improve the model? Let us also throw in `sex` as a predictor. How’s the model now?  Comment on deviance tests for model comparions, statistical significant of coefficients, accuracy/confusion matrix, McFadden's value, ROC/AUC, ... 
+Let's create testing and training data from Cross Validation to navigate around overfitting and possible variance in creating testing/training data
+
 
 ```{r, results='markup'}
-titanicLogit <- glm(survived ~ age + pclass + sex, family = "binomial")
-summary(titanicLogit)
-xkabledply(confusionMatrix(actual=titanicLogit$y,predicted=titanicLogit$fitted.values), title = "Confusion Matrix")
-prob = predict(titanicLogit, type = "response")
-titanic$prob = prob
-h <- roc(survived~prob)
+set.seed(123)
+train_control <- trainControl(method = "cv", number = 10)
+ShopModelCV <- train(Revenue ~., data = online_shoppers, method = "glm", family = "binomial", trControl = train_control)
+summary(ShopModelCV)
+```
+
+
+```{r, results='markup'}
+unloadPkg("caret")
+xkabledply(confusionMatrix(actual=ShopModelCV$finalModel$y,predicted=ShopModelCV$finalModel$fitted.values), title = "Confusion Matrix")
+prob = predict(ShopModelCV$finalModel, type = "response")
+h <- roc(Revenue~prob)
 auc(h)
 plot(h)
-pR2(titanicLogit)
-pvalue = pchisq(827.16 - 647.28, 710 - 709, lower.tail=F)
-pvalue
+ShopperNullLogit <- glm(Revenue ~ 1, family = "binomial")
+mcFadden = 1 - logLik(ShopModelCV$finalModel)/logLik(ShopperNullLogit)
+mcFadden
+loadPkg("caret")
 ```
 
-The model seems to be significantly improved with the addition of `sex` as a predictor. The coefficients are all statistically significant. Notably, the residual deviance and AIC are both lower than the previous model. The accuracy, recall, and precision are all raised, at .789, .811, and .84 respectively. The AUC is .8523, which is above .8, and the McFadden is raised to about .329. And finally, when we compare the residual deviances of both models, the p-value is much lower than the alpha of 0.05, which lends support in favor of the new model.
+Let's reduce the number of features in this model, particularly the less significant ones. Starting from the null model, let's add the strongest predictors and move in both directions to achieve the best BIC.
 
-### Question 9  
-**Sample Predictions**  
-According to the last model, what is the probability of survival for a female, age 10, second class passenger? And a male, age 20, first class passenger?
-
-```{r, eval='hide'}
-newdata1 <- with(titanic, data.frame(age = 10, sex = 'female', pclass = 2))
-newdata1$sex = factor(newdata1$sex)
-newdata1$pclass = factor(newdata1$pclass)
-newdata1$survivedP <- predict(titanicLogit, newdata = newdata1, type = "response")
-newdata1$survivedP
-newdata1 <- with(titanic, data.frame(age = 20, sex = 'male', pclass = 1))
-newdata1$sex = factor(newdata1$sex)
-newdata1$pclass = factor(newdata1$pclass)
-newdata1$survivedP <- predict(titanicLogit, newdata = newdata1, type = "response")
-newdata1$survivedP
+```{r, results='markup'}
+full = ShopModelCV
+null = glm(Revenue ~ 1, family = "binomial")
+step(null, scope = list(lower=null, upper=full), direction = "both", criterion = "AIC")
 ```
 
-From the estimates of the model, a female 10 year old second class passenger had a .89 chance of surviving, while a male 20 year old first class passenger had a .626 chance of surviving.
+Now we have our full logistic model, which is glm(formula = Revenue ~ PageValues + Month + ExitRates + ProductRelated_Duration + TrafficType + VisitorType + ProductRelated, family = "binomial")
+
+Let's run it through the same cross validation training/testing data.
+
+```{r, results='markup'}
+ShopModelCV <- train(Revenue ~ PageValues + Month + ExitRates + ProductRelated_Duration + TrafficType + VisitorType + ProductRelated, data = online_shoppers, method = "glm", family = "binomial", trControl = train_control)
+summary(ShopModelCV)
+```
+
+The new AIC of the model is 7182.9, which is a noticeable improvement on the original full model of 7214.7. Let's apply it to the test data (4:1 on random seed 123) and see how it does.
+
+```{r, results='markup'}
+unloadPkg("caret")
+xkabledply(confusionMatrix(actual=ShopModelCV$finalModel$y,predicted=ShopModelCV$finalModel$fitted.values), title = "Confusion Matrix")
+prob = predict(ShopModelCV$finalModel, type = "response")
+h <- roc(Revenue~prob)
+auc(h)
+plot(h)
+ShopperNullLogit <- glm(Revenue ~ 1, family = "binomial")
+mcFadden = 1 - logLik(ShopModelCV$finalModel)/logLik(ShopperNullLogit)
+mcFadden
+```
+
 
 ## Interpretation  
 
-### Question 10  
-**Summary**  
-With all the results you obtained above, how would you present a high-level summary of the findings? Are the results surprising or expected? 
-
-
-With over a .85 AUC, I would say that the second model is a pretty good fit for the dataset, and from the accuracy, recall, and precision of the model, could generally give an accurate prediction of the survival of a passenger given their age, passenger class, and gender. Still, the pseudo R-squared values are not low, but could indicate that there are more variables in play that determine the survival of a passenger.
-
-
-I found it surprising that the average age of those who survived compare to those who died were only 2 years apart, and a 20 year old male first class passenger actually had a higher than 50% rate of survival. Still, it was expected that being older, male, or a 2nd/3rd class passenger would result in a higher chance of death in respect to the second model.
+All of the models had generally high accuracies and AUCs, but I would choose the final model as it has the lowest AIC out of the three models. While the McFadden and AUC of the full model was slightly higher than that of the last model, as the complexity is much less with only 7 out of the possible 17 different features.
 
 
