@@ -138,12 +138,40 @@ chisq.test(wk_contable, simulate.p.value=F)
 ```
 
 ```{r, results='markup'}
-loadPkg("rpart")
 set.seed(1234)
+df_sample <- sample(2, nrow(df), replace=TRUE, prob=c(0.80, 0.20))
 
-dtree_model <- rpart(Revenue ~ . - Region, data=df, method="class", control = list(maxdepth = 8, cp = 0.01))
+train <- df[df_sample==1, ]
+# test_X <- df[df_sample==2, 1:17]
+# 
+# train_Y <- df[df_sample==1, 18]
+test <- df[df_sample==2, ]
+```
+
+```{r, results='markup'}
+loadPkg("rpart")
+
+dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth=5, cp=0.001, minsplit=10), )
 printcp(dtree_model)
 ```
+
+
+```{r, results='markup'}
+loadPkg("caret") 
+cm = confusionMatrix(predict(dtree_model, test, type = "class"), reference = test$Revenue, positive = "2")
+cm
+```
+
+```{r, results='markup'}
+library(pROC)
+
+prob = predict(dtree_model, test, type = "class")
+# df$prob=prob
+h <- roc(test$Revenue ~ as.numeric(prob))
+auc(h) # area-under-curve prefer 0.8 or higher.
+plot(h)
+```
+
 
 ```{r, results='markup'}
 plotcp(dtree_model)
@@ -166,8 +194,5 @@ loadPkg("rattle") # For fancyRpartPlot (Trees) Answer "no" on installing from bi
 fancyRpartPlot(dtree_model)
 ```
 
-```{r, results='markup'}
-loadPkg("caret") 
-cm = confusionMatrix(predict(dtree_model, type = "class"), reference = dtree_model[, "Revenue"] )
-```
+
 
