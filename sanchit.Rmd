@@ -16,6 +16,7 @@ library(matrixStats)
 library(psych)
 library(hrbrthemes)
 library(viridis)
+library(ROSE)
 # library(forcats)
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
@@ -98,7 +99,7 @@ ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
 
 ```{r, results='markup', fig.align="center", fig.width = 10, fig.height=8}
 # corPlot(df, cex = 1.2)
-pairs.panels(df)
+# pairs.panels(df)
 ```
 
 ```{r, results='markup'}
@@ -151,7 +152,7 @@ test <- df[df_sample==2, ]
 ```{r, results='markup'}
 loadPkg("rpart")
 
-dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth=5, cp=0.001), )
+dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth=30, cp=0.01))
 printcp(dtree_model)
 ```
 
@@ -223,4 +224,26 @@ auc(h) # area-under-curve prefer 0.8 or higher.
 plot(h)
 ```
 
+```{r, results='markup'}
+train_os = data.frame(train)
+train_new <- ovun.sample(Revenue ~ ., data = train_os, method = "over",N = 16710)$data
+table(train_new$Revenue)
+```
+
+```{r, results='markup'}
+dtree_model <- rpart(Revenue ~ . - Region, data=train_new, method="class", control = list(maxdepth = 6, cp=0.005) )
+```
+
+```{r, results='markup'}
+confusionMatrix(predict(dtree_model, test, type = "class"), reference = test$Revenue, positive = "2")
+```
+
+
+```{r}
+prob = predict(dtree_model, test, type = "class")
+# df$prob=prob
+h <- roc(test$Revenue ~ as.numeric(prob))
+auc(h) # area-under-curve prefer 0.8 or higher.
+plot(h)
+```
 
