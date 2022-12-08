@@ -450,14 +450,14 @@ for (kval in 10:30) {
   print( xkabledply(data.frame(cm_selected$byClass), title=paste("k = ",kval)) )
 }
 ``` 
-# # 
+
 ```{r, results='markup'}
 xkabledply(ResultDf, "Total Accuracy Summary")
 # Selected Variable Model
 xkabledply(ResultDf_selected, "Total Accuracy Summary")
 ```
 
-
+# # Accuracy Plot
 ```{r}
 kPlot = ggplot(ResultDf, aes(k, Total.Accuracy)) + geom_point(colour = "blue", size = 3) + geom_line(color='orange')
 kPlot
@@ -466,6 +466,7 @@ kPlot_selected = ggplot(ResultDf_selected, aes(k, Total.Accuracy)) + geom_point(
 kPlot_selected
 ```
 
+# # KNN Model with Optimal K Value
 ```{r}
 # Max Accuracy
 online_pred_max <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=15)
@@ -476,13 +477,14 @@ online_pred_max_selected <- knn(train = online_training_selected, test = online_
 onlinePREDCross_max_selected <- CrossTable(online_testLabels_selected, online_pred_selected, prop.chisq = FALSE)
 ```
 
-
+# # Roc Curve Plots and AUC Scores
 ```{r}
 loadPkg("pROC")
+# model with every variable
 h <- roc(online_testLabels , as.integer(online_pred_max))
 auc(h)
 plot(h)
-
+# model with specific variables
 h_selected <- roc(online_testLabels_selected , as.integer(online_pred_max_selected))
 auc(h_selected)
 plot(h_selected)
