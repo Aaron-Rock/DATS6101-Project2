@@ -88,6 +88,7 @@ online_shoppers_num$Weekend = as.numeric(online_shoppers_num$Weekend)
 online_shoppers_num$Revenue = as.numeric(online_shoppers_num$Revenue)
 str(online_shoppers_num)
 shop_corr <- cor(online_shoppers_num)
+colnames(shop_corr) <- c("Adm", "A_D", "Info", "I_D", "PR", "PR_D", "BR", "ER", "PV", "SDay", "WE", "Rev")
 corrplot.mixed(shop_corr)
 ```
 
@@ -98,6 +99,7 @@ The highest correlation with our response is the PageValues, which had a .49 cor
 Other than that, the Bounce and Exit Rates both have a negative correlation with the likelihood of generating revenue, while users that visited productRelated pages seems to more likely generate revenue over users that visited admin pages.
 
 From the t-test, we reject the null, and bring strong evidence to support the alternative hypothesis that the PageValue has a strong effect on whether or not the shopper buys.
+
 ```{r, results='markup'}
 online_shopper_bought <- online_shoppers[which(online_shoppers$Revenue==TRUE),]
 online_shopper_not <- online_shoppers[which(online_shoppers$Revenue==FALSE),]
@@ -107,7 +109,6 @@ t.test(online_shopper_bought$PageValues, online_shopper_not$PageValues, conf.lev
 
 ## Logistic Regression
 
-### Question 7   
 Basic Logistic Regression with PageValues and the three types of pages.
 
 ```{r, results='markup'}
@@ -131,7 +132,6 @@ loadPkg("caret")
 This model looks to be a good model already. The coefficients are all statistically significant aside from the Informational pages, and the AIC is 7675.8. The AUC is .8883, which is higher than 0.8, which is evidence that the predictors are doing well in classifying the dataset.
 
 
-### Question 8  
 Let's create testing and training data from Cross Validation to navigate around overfitting and possible variance in creating testing/training data
 
 
@@ -431,3 +431,290 @@ fancyRpartPlot(dtree_model)
 
 
 
+###########################################################################################################################
+###########################################################################################################################
+
+## Aaron' EDA and KNN Model'
+
+```{r}
+#First, load the file
+online = data.frame(read.csv("online_shoppers_intention.csv"))
+# We will use this dataframe later for model manipulation
+original_online = data.frame(read.csv("online_shoppers_intention.csv"))
+total_observations = nrow(online)
+total_observations
+head(online)
+```
+```{r, results='hide'}
+# Handling categorical variables prior to plotting
+online$Month = as.factor(online$Month)
+online$Revenue = as.factor(online$Revenue)
+online$Weekend = as.factor(online$Weekend)
+online$VisitorType = as.factor(online$VisitorType)
+```
+
+# # EDA of Barplots and Density
+``` {r}
+monthFrequency = ggplot(online, aes(x=Month, color=Month, fill=Month)) + geom_bar() + labs(title="Count of Months",
+        x ="Month", y = "Count")
+monthFrequency
+userCount = ggplot(online, aes(x=VisitorType, color=VisitorType, fill=VisitorType)) + geom_bar() + labs(title="Visitor Type Count",
+        x ="Visitor Types", y = "Count")
+userCount
+revCount = ggplot(online, aes(x=Revenue, color=Revenue, fill=Revenue)) + geom_bar() + labs(title="Revenue Count",
+        x ="Revenue", y = "Count")
+revCount
+revTrue = subset(online, online$Revenue == TRUE)
+revFalse = subset(online, online$Revenue == FALSE)
+pieNum <- c(nrow(revTrue), nrow(revFalse))
+piepercent<- round(100*pieNum/sum(pieNum), 1)
+pie(pieNum, labels = piepercent, main = "Revenue Percentages",col = rainbow(length(pieNum)))
+legend("topright", c("True","False"), cex = 0.8, fill = rainbow(length(pieNum)))
+```
+```{r}
+# Special Day data
+specialDay = ggplot(online, aes(SpecialDay)) + geom_density(color="darkblue", fill="lightblue") + labs(title="Density Chart of Special Day",x ="Special Day", y = "Density")
+specialDay
+# scatterSpecialDay = ggplot(online, aes(Revenue, SpecialDay)) + geom_violin(), this plot had no significance
+```
+
+
+# # Histograms of Individual Pages of the E-commerce Site
+```{r}
+admin = ggplot(online, aes(Administrative, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Administrative", x ="Administrative", y = "Count")
+admin
+info = ggplot(online, aes(Informational, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Informational", x ="Informational", y = "Count")
+info
+prod = ggplot(online, aes(ProductRelated, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Product Related", x ="Product Related", y = "Count")
+prod
+
+#
+# Duration of the above Pages
+#
+
+adminDur = ggplot(online, aes(Administrative_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Administrative Duration", x ="Administrative Duration", y = "Count")
+adminDur
+infoDur = ggplot(online, aes(Informational_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Informational Duration", x ="Informational Duration", y = "Count")
+infoDur
+prodDur = ggplot(online, aes(ProductRelated_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Product Related Duration", x ="Product Related Duration", y = "Count")
+prodDur
+```
+
+# # Boxplots of User Bounce and Exit Rates, Page Value Plots of Revenue and No Revenue
+```{r}
+# Bounce Rate is measured by total one page visits divided by total visits 
+bounceBox = ggplot(online, aes(BounceRates)) + geom_boxplot(color='blue') + labs(title="Boxplot of Bounce Rate", x ="Bounce Rate")
+bounceBox
+# Exit Rate is measured by total exits from page divided by total visits to page
+exitBox = ggplot(online, aes(ExitRates)) + geom_boxplot(color='orange') + labs(title="Boxplot of Exit Rate", x ="Exit Rate")
+exitBox
+# Page Value is the average value for a page that a user visited before landing on the goal page or completing an Ecommerce transaction
+pageBox_rev = ggplot(revTrue, aes(PageValues)) + geom_boxplot(color='green') + labs(title="Boxplot of Page Values with Revenue", x ="Page Values")
+pageBox_rev
+pageBox_no_rev = ggplot(revFalse, aes(PageValues)) + geom_boxplot(color='red') + labs(title="Boxplot of Page Values of No Revenue Rows", x ="Page Values")
+pageBox_no_rev
+```
+The average Bounce Rate for this site is `r mean(online$BounceRates)*100`%.
+The average Exit Rate for this site is `r mean(online$ExitRates)*100`%.
+Page Values that had revenue had an average of `r mean(revTrue$PageValues)`.
+Page Values that had did not have revenue had an average of `r mean(revFalse$PageValues)`.
+For our dataset it would be better to see individual page exit and bounce rates. The column variables Exit and Bounce Rates are the average of these metrics over each page on this site.
+
+# # Corrplot of Vaariables
+```{r}
+# Corrplot after changing categorical to numerical
+online_new = subset(online, select = -c(VisitorType, Month))
+online_new$Weekend = as.numeric(online_new$Weekend)
+online_new$Revenue = as.numeric(online_new$Revenue)
+corrOnline <- cor(online_new)
+corrplot(corrOnline, method="number",number.cex=0.5,tl.cex=.6)
+```
+
+# # Chi-Squared Test for Months and Special Day against Revenue
+```{r}
+# Table for Month and Revenue of that Month
+monthTable = xtabs( ~ Revenue + Month, data = online)
+monthTable
+chisqMonth = chisq.test(monthTable)
+chisqMonth
+```
+
+```{r}
+# Table for Special Day and Revenue as we get closer to that Day
+# This value represents the closeness of the browsing date to special days or holidays
+specialDayTable = xtabs( ~ Revenue + SpecialDay, data = online)
+specialDayTable
+chisqSD = chisq.test(specialDayTable)
+chisqSD
+```
+
+```{r, results='hide'}
+library(tidyr)
+# Rehandle variables for knn model
+online$VisitorType = as.factor(online$VisitorType)
+online$Weekend = as.integer(online$Weekend)
+online$OperatingSystems = as.integer(online$OperatingSystems)
+online$Browser = as.integer(online$Browser)
+online$TrafficType = as.integer(online$TrafficType)
+online$Region = as.integer(online$Region)
+online$Month = as.integer(factor(online$Month, levels = month.abb))
+online = drop_na(online) # dropping wrong month rows
+# Making Visitor Type into numerical variable
+library(tidyverse)
+online$VisitorType <- str_replace(online$VisitorType,'New_Visitor','1')
+online$VisitorType <- str_replace(online$VisitorType,'Other','2')
+online$VisitorType <- str_replace(online$VisitorType,'Returning_Visitor','3')
+online$VisitorType = as.numeric(online$VisitorType)
+```
+
+
+```{r, results='hide'}
+# handling the variables for the specific variables
+# PageValues + Month + ExitRates + ProductRelated_Duration + TrafficType + VisitorType + ProductRelated
+original_online$VisitorType = as.factor(original_online$VisitorType)
+original_online$Weekend = as.integer(original_online$Weekend)
+original_online$OperatingSystems = as.integer(original_online$OperatingSystems)
+original_online$Browser = as.integer(original_online$Browser)
+original_online$TrafficType = as.integer(original_online$TrafficType)
+original_online$Region = as.integer(original_online$Region)
+original_online$Month = as.integer(factor(original_online$Month, levels = month.abb))
+original_online = drop_na(online)
+# Making Visitor Type into numerical variable
+
+original_online$VisitorType <- str_replace(original_online$VisitorType,'New_Visitor','1')
+original_online$VisitorType <- str_replace(original_online$VisitorType,'Other','2')
+original_online$VisitorType <- str_replace(original_online$VisitorType,'Returning_Visitor','3')
+original_online$VisitorType = as.numeric(original_online$VisitorType)
+
+original_online = subset(original_online, select = -c(1,2,3,4,7,10,12,13,14,17))
+```
+# # Splitting Data and Training Data
+```{r}
+scaledOnline <- as.data.frame(scale(online[1:17], center = TRUE, scale = TRUE))
+```
+
+```{r}
+# Selected Variables based off EDA
+scaled_Online_select <- as.data.frame(scale(original_online[1:7], center = TRUE, scale = TRUE))
+```
+
+```{r}
+set.seed(123)
+online_sample <- sample(2, nrow(scaledOnline), replace=TRUE, prob=c(0.80, 0.20))
+```
+
+```{r}
+# Selected Variables Model based off EDA
+set.seed(123)
+online_sample_selected <- sample(2, nrow(scaled_Online_select), replace=TRUE, prob=c(0.8, 0.2))
+```
+
+
+```{r}
+online_training <- scaledOnline[online_sample==1, 1:17]
+online_test <- scaledOnline[online_sample==2, 1:17]
+```
+
+```{r}
+# Selected Variables Model based off EDA
+online_training_selected <- scaled_Online_select[online_sample_selected==1, 1:7]
+online_test_selected <- scaled_Online_select[online_sample_selected==2, 1:7]
+```
+
+
+```{r}
+online_trainLabels <- online[online_sample==1, 18]
+online_testLabels <- online[online_sample==2, 18]
+```
+
+```{r}
+# Selected Variables Model based off EDA
+online_trainLabels_selected <- original_online[online_sample_selected==1, 8]
+online_testLabels_selected <- original_online[online_sample_selected==2, 8]
+```
+
+```{r, results='hide'}
+ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
+
+ResultDf_selected = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
+```
+# # KNN Models both Full Model and Specific Variable
+```{r}
+library(class)
+library(gmodels)
+for (kval in 5:25) {
+  online_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=kval)
+  onlinePREDCross <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
+  print( paste("k = ", kval) )
+  onlinePREDCross
+  library(caret)
+  cm = confusionMatrix(online_pred, reference = online_testLabels ) 
+  cmaccu = cm$overall['Accuracy']
+  print( paste("Total Accuracy = ", cmaccu ) )
+   
+  cmt = data.frame(k=kval, Total.Accuracy = cmaccu, row.names = NULL )  
+  ResultDf = rbind(ResultDf, cmt)
+  print( xkabledply(   as.matrix(cm), title = paste("ConfusionMatrix for k = ",kval ) ) )
+  print( xkabledply(data.frame(cm$byClass), title=paste("k = ",kval)) )
+}
+``` 
+
+```{r}
+# Selected Variable Model
+for (kval in 10:30) {
+  online_pred_selected <- knn(train = online_training_selected, test = online_test_selected, cl=online_trainLabels_selected, k=kval)
+  onlinePREDCross_selected <- CrossTable(online_testLabels_selected, online_pred_selected, prop.chisq = FALSE)
+  print( paste("k = ", kval) )
+  onlinePREDCross_selected
+  
+  cm_selected = confusionMatrix(online_pred_selected, reference = online_testLabels_selected ) 
+  cmaccu_selected = cm_selected$overall['Accuracy']
+  print( paste("Total Accuracy = ", cmaccu_selected ) )
+   
+  cmt_selected = data.frame(k=kval, Total.Accuracy = cmaccu_selected, row.names = NULL )  
+  ResultDf_selected = rbind(ResultDf_selected, cmt_selected)
+  print( xkabledply(   as.matrix(cm_selected), title = paste("ConfusionMatrix for k = ",kval ) ) )
+  print( xkabledply(data.frame(cm_selected$byClass), title=paste("k = ",kval)) )
+}
+``` 
+
+```{r, results='markup'}
+xkabledply(ResultDf, "Total Accuracy Summary")
+# Selected Variable Model
+xkabledply(ResultDf_selected, "Total Accuracy Summary")
+```
+
+# # Accuracy Plot
+```{r}
+kPlot = ggplot(ResultDf, aes(k, Total.Accuracy)) + geom_point(colour = "blue", size = 3) + geom_line(color='orange')
+kPlot
+
+kPlot_selected = ggplot(ResultDf_selected, aes(k, Total.Accuracy)) + geom_point(colour = "blue", size = 3) + geom_line(color='orange')
+kPlot_selected
+```
+
+# # KNN Model with Optimal K Value
+```{r}
+# Max Accuracy
+online_pred_max <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=15)
+onlinePREDCross_max <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
+
+# Selected Variable Model
+online_pred_max_selected <- knn(train = online_training_selected, test = online_test_selected, cl=online_trainLabels_selected, k=25)
+onlinePREDCross_max_selected <- CrossTable(online_testLabels_selected, online_pred_selected, prop.chisq = FALSE)
+```
+
+# # Roc Curve Plots and AUC Scores
+```{r}
+loadPkg("pROC")
+# model with every variable
+h <- roc(online_testLabels , as.integer(online_pred_max))
+auc(h)
+plot(h)
+# model with specific variables
+h_selected <- roc(online_testLabels_selected , as.integer(online_pred_max_selected))
+auc(h_selected)
+plot(h_selected)
+```
+
+Sadly, both models do not meet the cut off AUC metric of 0.8. We can see from the Confusion Matrix that when the models are at the optimal k value the total accuracy are in the high 80 percent levels. However, the issue we need to address is the specificity that is measured by taking the true negatives divided by the true negatives plus the false positives. For both models we built we can see that there are small specificity rates.
