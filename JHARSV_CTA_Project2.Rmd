@@ -1,0 +1,198 @@
+---
+title: "Project 2"
+author: "Jeffrey Hu"
+# date: "today"
+date: "12/4/2022"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r init, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+library(ezids)
+library(ModelMetrics)
+library(pROC)
+library(ResourceSelection)
+library(pscl)
+library(ggplot2)
+library(tidyverse)
+library(ISLR)
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# ‘scipen’: integer. A penalty to be applied when deciding to print numeric values in fixed or exponential notation.  Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than ‘scipen’ digits wider.
+# use scipen=999 to prevent scientific notation at all times
+```
+
+# Online Shoppers Dataset  
+
+## Data reading and cleaning  
+
+### Importing the dataset
+
+```{r, results='markup'}
+online_shoppers <- data.frame(read.csv("online_shoppers_intention.csv"))
+str(online_shoppers)
+dim(online_shoppers)
+```
+
+### Cleaning up the NAs
+There are no NAs in the dataset, and no ommissions in the end.
+
+```{r, results='markup'}
+which(is.na(online_shoppers))
+online_shoppers <- na.omit(online_shoppers)
+str(online_shoppers)
+```
+
+### More clean up  
+Some of the features are not in their correct data type. We will factorize some of the variables. Some of the factored features have lots of levels, which could be a problem when designing models with dummies and increase computing expense.
+
+```{r, results='markup'}
+online_shoppers$OperatingSystems = factor(online_shoppers$OperatingSystems)
+online_shoppers$Browser = factor(online_shoppers$Browser)
+online_shoppers$Region = factor(online_shoppers$Region)
+online_shoppers$TrafficType = factor(online_shoppers$TrafficType)
+online_shoppers$VisitorType = factor(online_shoppers$VisitorType)
+online_shoppers$Weekend = factor(online_shoppers$Weekend)
+online_shoppers$Revenue = factor(online_shoppers$Revenue)
+# online_shoppers$Month = factor(online_shoppers$Month)
+str(online_shoppers)
+```
+
+## EDA Pre-logistic Regression
+
+Let's do an initial mixed corrplot to see the relationship between the features and the possibility of generating revenue. We will only look at the numerical/ordinal factors without the factors.
+
+```{r, results='markup'}
+library(corrplot)
+online_shoppers_num = subset(online_shoppers, select = -c(Month, OperatingSystems, Browser, Region, TrafficType, VisitorType))
+online_shoppers_num$Weekend = as.numeric(online_shoppers_num$Weekend)
+online_shoppers_num$Revenue = as.numeric(online_shoppers_num$Revenue)
+str(online_shoppers_num)
+shop_corr <- cor(online_shoppers_num)
+corrplot.mixed(shop_corr)
+```
+
+We observed some very obvious correlation between things like the number of administrative pages visited and the amount of time each visitor spent on administrative pages, which is expected just like promotional/promotional_duration and productedRelated/productRelated_Duration.
+
+The highest correlation with our response is the PageValues, which had a .49 correlation with Revenue. Again, this higher correlation makes sense because the PageValues feature is an average value/metric of the page visited before the user completed a transaction. This is expected, as pagevalues We will do some more EDA on that.
+
+Other than that, the Bounce and Exit Rates both have a negative correlation with the likelihood of generating revenue, while users that visited productRelated pages seems to more likely generate revenue over users that visited admin pages.
+
+From the t-test, we reject the null, and bring strong evidence to support the alternative hypothesis that the PageValue has a strong effect on whether or not the shopper buys.
+```{r, results='markup'}
+online_shopper_bought <- online_shoppers[which(online_shoppers$Revenue==TRUE),]
+online_shopper_not <- online_shoppers[which(online_shoppers$Revenue==FALSE),]
+t.test(online_shopper_bought$PageValues, online_shopper_not$PageValues, conf.level = .95)
+```
+
+
+```{r, results='markup'}
+#chisq.test(titanic$survived, titanic$sex, correct=FALSE)
+```
+
+
+```{r, results='markup'}
+#chisq.test(titanic$survived, titanic$pclass, correct=FALSE)
+```
+
+
+## Logistic Regression
+
+### Question 7   
+Basic Logistic Regression with PageValues and the three types of pages.
+
+```{r, results='markup'}
+unloadPkg("caret")
+attach(online_shoppers)
+ShopLogit <- glm(Revenue ~ PageValues + ProductRelated + Informational + Administrative, data = online_shoppers, family = "binomial")
+summary(ShopLogit)
+#kabledply(confusionMatrix(actual=ShopLogit$y,predicted=ShopLogit$fitted.values), title = "Confusion Matrix")
+confusionMatrix(actual=ShopLogit$y,predicted=ShopLogit$fitted.values)
+prob = predict(ShopLogit, type = "response")
+h <- roc(Revenue~prob)
+auc(h)
+plot(h)
+ShopperNullLogit <- glm(Revenue ~ 1, family = "binomial")
+mcFadden = 1 - logLik(ShopLogit)/logLik(ShopperNullLogit)
+mcFadden
+pR2(ShopLogit)
+loadPkg("caret")
+```
+
+This model looks to be a good model already. The coefficients are all statistically significant aside from the Informational pages, and the AIC is 7675.8. The AUC is .8883, which is higher than 0.8, which is evidence that the predictors are doing well in classifying the dataset.
+
+
+### Question 8  
+Let's create testing and training data from Cross Validation to navigate around overfitting and possible variance in creating testing/training data
+
+
+```{r, results='markup'}
+set.seed(123)
+train_control <- trainControl(method = "cv", number = 10)
+ShopModelCV <- train(Revenue ~., data = online_shoppers, method = "glm", family = "binomial", trControl = train_control)
+summary(ShopModelCV)
+```
+
+
+```{r, results='markup'}
+unloadPkg("caret")
+xkabledply(confusionMatrix(actual=ShopModelCV$finalModel$y,predicted=ShopModelCV$finalModel$fitted.values), title = "Confusion Matrix")
+prob = predict(ShopModelCV$finalModel, type = "response")
+h <- roc(Revenue~prob)
+auc(h)
+plot(h)
+ShopperNullLogit <- glm(Revenue ~ 1, family = "binomial")
+mcFadden = 1 - logLik(ShopModelCV$finalModel)/logLik(ShopperNullLogit)
+mcFadden
+loadPkg("caret")
+```
+
+Let's reduce the number of features in this model, particularly the less significant ones. Starting from the null model, let's add the strongest predictors and move in both directions to achieve the best BIC.
+
+```{r, results='markup'}
+full = ShopModelCV
+null = glm(Revenue ~ 1, family = "binomial")
+step(null, scope = list(lower=null, upper=full), direction = "both", criterion = "AIC")
+```
+
+Now we have our full logistic model, which is glm(formula = Revenue ~ PageValues + Month + ExitRates + ProductRelated_Duration + TrafficType + VisitorType + ProductRelated, family = "binomial")
+
+Let's run it through the same cross validation training/testing data.
+
+```{r, results='markup'}
+ShopModelCV <- train(Revenue ~ PageValues + Month + ExitRates + ProductRelated_Duration + TrafficType + VisitorType + ProductRelated, data = online_shoppers, method = "glm", family = "binomial", trControl = train_control)
+summary(ShopModelCV)
+```
+
+The new AIC of the model is 7182.9, which is a noticeable improvement on the original full model of 7214.7. Let's apply it to the test data (4:1 on random seed 123) and see how it does.
+
+```{r, results='markup'}
+unloadPkg("caret")
+xkabledply(confusionMatrix(actual=ShopModelCV$finalModel$y,predicted=ShopModelCV$finalModel$fitted.values), title = "Confusion Matrix")
+prob = predict(ShopModelCV$finalModel, type = "response")
+h <- roc(Revenue~prob)
+auc(h)
+plot(h)
+ShopperNullLogit <- glm(Revenue ~ 1, family = "binomial")
+mcFadden = 1 - logLik(ShopModelCV$finalModel)/logLik(ShopperNullLogit)
+mcFadden
+```
+
+
+## Interpretation  
+
+All of the models had generally high accuracies and AUCs, but I would choose the final model as it has the lowest AIC out of the three models. While the McFadden and AUC of the full model was slightly higher than that of the last model, as the complexity is much less with only 7 out of the possible 17 different features.
+
+
