@@ -415,6 +415,7 @@ ResultDf_selected = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.na
 ```
 # # KNN Models both Full Model and Specific Variable
 ```{r}
+library(caret)
 for (kval in 5:25) {
   online_pred <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=kval)
   onlinePREDCross <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
