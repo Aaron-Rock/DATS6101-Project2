@@ -27,7 +27,10 @@ options(scientific=T, digits = 3)
 ```{r}
 #First, load the file
 online = data.frame(read.csv("online_shoppers_intention.csv"))
+# We will use this dataframe later for model manipulation
 original_online = data.frame(read.csv("online_shoppers_intention.csv"))
+total_observations = nrow(online)
+total_observations
 head(online)
 ```
 ```{r, results='hide'}
@@ -39,11 +42,14 @@ online$VisitorType = as.factor(online$VisitorType)
 ```
 
 ``` {r}
-monthFrequency = ggplot(online, aes(x=Month, color=Month, fill=Month)) + geom_bar()
+monthFrequency = ggplot(online, aes(x=Month, color=Month, fill=Month)) + geom_bar() + labs(title="Count of Months",
+        x ="Month", y = "Count")
 monthFrequency
-userCount = ggplot(online, aes(x=VisitorType, color=VisitorType, fill=VisitorType)) + geom_bar()
+userCount = ggplot(online, aes(x=VisitorType, color=VisitorType, fill=VisitorType)) + geom_bar() + labs(title="Visitor Type Count",
+        x ="Visitor Types", y = "Count")
 userCount
-revCount = ggplot(online, aes(x=Revenue, color=Revenue, fill=Revenue)) + geom_bar()
+revCount = ggplot(online, aes(x=Revenue, color=Revenue, fill=Revenue)) + geom_bar() + labs(title="Revenue Count",
+        x ="Revenue", y = "Count")
 revCount
 revTrue = subset(online, online$Revenue == TRUE)
 revFalse = subset(online, online$Revenue == FALSE)
@@ -54,35 +60,53 @@ legend("topright", c("True","False"), cex = 0.8, fill = rainbow(length(pieNum)))
 ```
 ```{r}
 # Special Day data
-specialDay = ggplot(online, aes(SpecialDay)) + geom_density(color="darkblue", fill="lightblue")
+specialDay = ggplot(online, aes(SpecialDay)) + geom_density(color="darkblue", fill="lightblue") + labs(title="Density Chart of Special Day",x ="Special Day", y = "Density")
 specialDay
 # scatterSpecialDay = ggplot(online, aes(Revenue, SpecialDay)) + geom_violin(), this plot had no significance
 ```
 
 ```{r}
-adminDur = ggplot(online, aes(Administrative_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30)
+admin = ggplot(online, aes(Administrative, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Administrative", x ="Administrative", y = "Count")
+admin
+info = ggplot(online, aes(Informational, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Informational", x ="Informational", y = "Count")
+info
+prod = ggplot(online, aes(ProductRelated, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Product Related", x ="Product Related", y = "Count")
+prod
+
+#
+# Duration of the above Pages
+#
+
+adminDur = ggplot(online, aes(Administrative_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Administrative Duration", x ="Administrative Duration", y = "Count")
 adminDur
-infoDur = ggplot(online, aes(Informational_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30)
+infoDur = ggplot(online, aes(Informational_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Informational Duration", x ="Informational Duration", y = "Count")
 infoDur
-prodDur = ggplot(online, aes(ProductRelated_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30)
+prodDur = ggplot(online, aes(ProductRelated_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Product Related Duration", x ="Product Related Duration", y = "Count")
 prodDur
 ```
 
 ```{r}
 # Bounce Rate is measured by total one page visits divided by total visits 
-bounceBox = ggplot(online, aes(BounceRates)) + geom_boxplot(color='blue')
+bounceBox = ggplot(online, aes(BounceRates)) + geom_boxplot(color='blue') + labs(title="Boxplot of Bounce Rate", x ="Bounce Rate")
 bounceBox
 # Exit Rate is measured by total exits from page divided by total visits to page
-exitBox = ggplot(online, aes(ExitRates)) + geom_boxplot(color='orange')
+exitBox = ggplot(online, aes(ExitRates)) + geom_boxplot(color='orange') + labs(title="Boxplot of Exit Rate", x ="Exit Rate")
 exitBox
+# Page Value is the average value for a page that a user visited before landing on the goal page or completing an Ecommerce transaction
+pageBox_rev = ggplot(revTrue, aes(PageValues)) + geom_boxplot(color='green') + labs(title="Boxplot of Page Values with Revenue", x ="Page Values")
+pageBox_rev
+pageBox_no_rev = ggplot(revFalse, aes(PageValues)) + geom_boxplot(color='red') + labs(title="Boxplot of Page Values of No Revenue Rows", x ="Page Values")
+pageBox_no_rev
 ```
 The average Bounce Rate for this site is `r mean(online$BounceRates)*100`%.
 The average Exit Rate for this site is `r mean(online$ExitRates)*100`%.
-
+Page Values that had revenue had an average of `r mean(revTrue$PageValues)`.
+Page Values that had did not have revenue had an average of `r mean(revFalse$PageValues)`.
 For our dataset it would be better to see individual page exit and bounce rates. The column variables Exit and Bounce Rates are the average of these metrics over each page on this site.
 
 
 ```{r}
+# Corrplot after changing categorical to numerical
 online_new = subset(online, select = -c(VisitorType, Month))
 online_new$Weekend = as.numeric(online_new$Weekend)
 online_new$Revenue = as.numeric(online_new$Revenue)
@@ -92,6 +116,7 @@ corrplot(corrOnline, method="number",number.cex=0.5,tl.cex=.6)
 
 
 ```{r}
+# Table for Month and Revenue of that Month
 monthTable = xtabs( ~ Revenue + Month, data = online)
 monthTable
 chisqMonth = chisq.test(monthTable)
@@ -99,6 +124,8 @@ chisqMonth
 ```
 
 ```{r}
+# Table for Special Day and Revenue as we get closer to that Day
+# This value represents the closeness of the browsing date to special days or holidays
 specialDayTable = xtabs( ~ Revenue + SpecialDay, data = online)
 specialDayTable
 chisqSD = chisq.test(specialDayTable)
@@ -240,10 +267,10 @@ xkabledply(ResultDf_selected, "Total Accuracy Summary")
 
 
 ```{r}
-kPlot = ggplot(ResultDf, aes(k, Total.Accuracy)) + geom_point() + geom_line()
+kPlot = ggplot(ResultDf, aes(k, Total.Accuracy)) + geom_point(colour = "blue", size = 3) + geom_line(color='orange')
 kPlot
 
-kPlot_selected = ggplot(ResultDf_selected, aes(k, Total.Accuracy)) + geom_point() + geom_line()
+kPlot_selected = ggplot(ResultDf_selected, aes(k, Total.Accuracy)) + geom_point(colour = "blue", size = 3) + geom_line(color='orange')
 kPlot_selected
 ```
 
@@ -268,6 +295,8 @@ h_selected <- roc(online_testLabels_selected , as.integer(online_pred_max_select
 auc(h_selected)
 plot(h_selected)
 ```
+
+Sadly, both models do not meet the cut off AUC metric of 0.8. We can see from the Confusion Matrix that when the models are at the optimal k value the total accuracy are in the high 80 percent levels. However, the issue we need to address is the specificity that is measured by taking the true negatives divided by the true negatives plus the false positives. For both models we built we can see that there are small specificity rates.
 
 
 
