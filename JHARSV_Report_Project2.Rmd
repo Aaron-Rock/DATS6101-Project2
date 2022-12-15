@@ -461,7 +461,7 @@ unloadPkg("Caret")
 
 ## Aaron' EDA and KNN Model'
 
-```{r}
+```{r, results='hide'}
 #First, load the file
 online = data.frame(read.csv("online_shoppers_intention.csv"))
 # We will use this dataframe later for model manipulation
@@ -470,6 +470,7 @@ total_observations = nrow(online)
 total_observations
 head(online)
 ```
+We have read in the data and we have 12,330 observations 18 variables. Just like above we are going to factorize variables that need to be factored fro this part of EDA.
 ```{r, results='hide'}
 # Handling categorical variables prior to plotting
 online$Month = as.factor(online$Month)
@@ -483,12 +484,24 @@ online$VisitorType = as.factor(online$VisitorType)
 monthFrequency = ggplot(online, aes(x=Month, color=Month, fill=Month)) + geom_bar() + labs(title="Count of Months",
         x ="Month", y = "Count")
 monthFrequency
+```
+We see a good distribution throughout the months in our  dataset. One thing to notice is that the months April and January are not represented in our dataset. For the barplot above, the months November and May have the highest count. We do not know the product being sold for the site, but there could be a relationship to the product being sold and the month.
+
+``` {r}
 userCount = ggplot(online, aes(x=VisitorType, color=VisitorType, fill=VisitorType)) + geom_bar() + labs(title="Visitor Type Count",
         x ="Visitor Types", y = "Count")
 userCount
+```
+Visitor type is important to any successful webpage. For our specific dataset we see from the plot above that at the time when this dataset was taken that their is a considerable amount of returning customers rather seeing a higher bin for the new visitor.
+
+``` {r}
 revCount = ggplot(online, aes(x=Revenue, color=Revenue, fill=Revenue)) + geom_bar() + labs(title="Revenue Count",
         x ="Revenue", y = "Count")
 revCount
+```
+The most important variable in our dataset and the variable that will be our target for modeling is revenue. For this variable we can see from the plot above that dataset for this variable is very unbalanced. After viewing the pie chart below the no revenue is at 84.5% and the yes revenue is at 15.5%.
+
+``` {r}
 revTrue = subset(online, online$Revenue == TRUE)
 revFalse = subset(online, online$Revenue == FALSE)
 pieNum <- c(nrow(revTrue), nrow(revFalse))
@@ -496,6 +509,7 @@ piepercent<- round(100*pieNum/sum(pieNum), 1)
 pie(pieNum, labels = piepercent, main = "Revenue Percentages",col = rainbow(length(pieNum)))
 legend("topright", c("True","False"), cex = 0.8, fill = rainbow(length(pieNum)))
 ```
+
 ```{r}
 # Special Day data
 specialDay = ggplot(online, aes(SpecialDay)) + geom_density(color="darkblue", fill="lightblue") + labs(title="Density Chart of Special Day",x ="Special Day", y = "Density")
@@ -503,6 +517,7 @@ specialDay
 # scatterSpecialDay = ggplot(online, aes(Revenue, SpecialDay)) + geom_violin(), this plot had no significance
 ```
 
+The special day variable is a measure of how close to a certified holiday the website was visited on. If the number is 0 this means the visit was not close  and the closer to 1 being the closer to a holiday it is with 1 being on the day of the special day.  When we plot a density chart of this variable we can see that most visits are 0 and the density decreases drastically all the way to 1.
 
 # # Histograms of Individual Pages of the E-commerce Site
 ```{r}
@@ -512,40 +527,45 @@ info = ggplot(online, aes(Informational, color=Revenue, fill=Revenue)) + geom_hi
 info
 prod = ggplot(online, aes(ProductRelated, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Product Related", x ="Product Related", y = "Count")
 prod
+```
+The histograms above are the three pages represent on the e-commerce website. For the x-axis it is representing the number of times the user visited this kind of page. The three different pages for the e-commerce are administrative, informational, and product related. The metric we are trying to see from the plots are if there is a correlation between page and revenue. This is why we plotted the revenue classification by color. Administrative and informational seem to not have as much as an impact as product related pages. When we look at the product related page histogram we see that the revenue limbs up the x-axis more than the other two pages.
 
+```{r}
 #
 # Duration of the above Pages
 #
-
 adminDur = ggplot(online, aes(Administrative_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Administrative Duration", x ="Administrative Duration", y = "Count")
 adminDur
+
 infoDur = ggplot(online, aes(Informational_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Informational Duration", x ="Informational Duration", y = "Count")
 infoDur
 prodDur = ggplot(online, aes(ProductRelated_Duration, color=Revenue, fill=Revenue)) + geom_histogram(bins=30) + labs(title="Count of Product Related Duration", x ="Product Related Duration", y = "Count")
 prodDur
 ```
+Just like the variables above these three variables are still about the three main pages on the e-commerce page but instead of counting how many times a customer visits a certain page the plots above use the duration visited on each page. Similar to the plots we saw with count product related is the only histogram with duration that shows any real relationship between time spent on a page and revenue.
 
 # # Boxplots of User Bounce and Exit Rates, Page Value Plots of Revenue and No Revenue
 ```{r}
 # Bounce Rate is measured by total one page visits divided by total visits 
 bounceBox = ggplot(online, aes(BounceRates)) + geom_boxplot(color='blue') + labs(title="Boxplot of Bounce Rate", x ="Bounce Rate")
 bounceBox
+```
+The bounce rate for the entire dataset is extremely low indicating that many users are not only viewing one page when visiting the e-commerce website. The interquartile for this variable is below .025. So, 2.5% of all users are viewing one page only before leaving.The average Bounce Rate for this site is `r mean(online$BounceRates)*100`%.
+```{r}
 # Exit Rate is measured by total exits from page divided by total visits to page
 exitBox = ggplot(online, aes(ExitRates)) + geom_boxplot(color='orange') + labs(title="Boxplot of Exit Rate", x ="Exit Rate")
 exitBox
-# Page Value is the average value for a page that a user visited before landing on the goal page or completing an Ecommerce transaction
+```
+For the variable exit rate we are looking to see what is the rate that users are leaving from the site from a specific page. The one down side to our dataset is that the exit rate column is an average of all pages instead of each specific page. With that being said we can see from the boxplot above that the interquartile is right below 0.05. The median looks to be at 0.025. The average Exit Rate for this site is `r mean(online$ExitRates)*100`%. 
+```{r}
+# Page Value is the average value for a page that a user visited before landing on the goal page or completing an E-commerce transaction
 pageBox_rev = ggplot(revTrue, aes(PageValues)) + geom_boxplot(color='green') + labs(title="Boxplot of Page Values with Revenue", x ="Page Values")
 pageBox_rev
 pageBox_no_rev = ggplot(revFalse, aes(PageValues)) + geom_boxplot(color='red') + labs(title="Boxplot of Page Values of No Revenue Rows", x ="Page Values")
 pageBox_no_rev
 ```
-The average Bounce Rate for this site is `r mean(online$BounceRates)*100`%.
-The average Exit Rate for this site is `r mean(online$ExitRates)*100`%.
-Page Values that had revenue had an average of `r mean(revTrue$PageValues)`.
-Page Values that had did not have revenue had an average of `r mean(revFalse$PageValues)`.
-For our dataset it would be better to see individual page exit and bounce rates. The column variables Exit and Bounce Rates are the average of these metrics over each page on this site.
-
-# # Corrplot of Vaariables
+To get a valuable insight for the variable page value we split the dataset by if the observation ended with revenue being produced. When we plotted each new subset we can see a massive difference in the interquartiles being plotted on the boxplot. Page Values that had revenue had an average of `r mean(revTrue$PageValues)`. Page Values that had did not have revenue had an average of `r mean(revFalse$PageValues)`.
+# # Corrplot of Variables
 ```{r}
 # Corrplot after changing categorical to numerical
 online_new = subset(online, select = -c(VisitorType, Month))
@@ -554,6 +574,7 @@ online_new$Revenue = as.numeric(online_new$Revenue)
 corrOnline <- cor(online_new)
 corrplot(corrOnline, method="number",number.cex=0.5,tl.cex=.6)
 ```
+After reverting back variables to numeric to plot on the corrplot we are able to see a few variables to target when building our model. Page values has the highest correlation at 0.49.
 
 # # Chi-Squared Test for Months and Special Day against Revenue
 ```{r}
@@ -562,9 +583,7 @@ monthTable = xtabs( ~ Revenue + Month, data = online)
 monthTable
 chisqMonth = chisq.test(monthTable)
 chisqMonth
-```
 
-```{r}
 # Table for Special Day and Revenue as we get closer to that Day
 # This value represents the closeness of the browsing date to special days or holidays
 specialDayTable = xtabs( ~ Revenue + SpecialDay, data = online)
@@ -572,6 +591,7 @@ specialDayTable
 chisqSD = chisq.test(specialDayTable)
 chisqSD
 ```
+For my part of EDA I also wanted to test the significance of the variables month and special day in regards to revenue. After building the contingency tables and passing each table to the chi-squared function we can see that these variables are significant to revenue.
 
 ```{r, results='hide'}
 library(tidyr)
@@ -592,7 +612,6 @@ online$VisitorType <- str_replace(online$VisitorType,'Returning_Visitor','3')
 online$VisitorType = as.numeric(online$VisitorType)
 ```
 
-
 ```{r, results='hide'}
 # handling the variables for the specific variables
 # PageValues + Month + ExitRates + ProductRelated_Duration + TrafficType + VisitorType + ProductRelated
@@ -605,59 +624,42 @@ original_online$Region = as.integer(original_online$Region)
 original_online$Month = as.integer(factor(original_online$Month, levels = month.abb))
 original_online = drop_na(online)
 # Making Visitor Type into numerical variable
-
 original_online$VisitorType <- str_replace(original_online$VisitorType,'New_Visitor','1')
 original_online$VisitorType <- str_replace(original_online$VisitorType,'Other','2')
 original_online$VisitorType <- str_replace(original_online$VisitorType,'Returning_Visitor','3')
 original_online$VisitorType = as.numeric(original_online$VisitorType)
-
 original_online = subset(original_online, select = -c(1,2,3,4,7,10,12,13,14,17))
 ```
 # # Splitting Data and Training Data
-```{r}
+```{r, results='hide'}
+# Scaling
 scaledOnline <- as.data.frame(scale(online[1:17], center = TRUE, scale = TRUE))
-```
 
-```{r}
-# Selected Variables based off EDA
+# Selected Variables based off EDA - Scaling
 scaled_Online_select <- as.data.frame(scale(original_online[1:7], center = TRUE, scale = TRUE))
-```
 
-```{r}
 set.seed(123)
 online_sample <- sample(2, nrow(scaledOnline), replace=TRUE, prob=c(0.80, 0.20))
-```
 
-```{r}
 # Selected Variables Model based off EDA
 set.seed(123)
 online_sample_selected <- sample(2, nrow(scaled_Online_select), replace=TRUE, prob=c(0.8, 0.2))
-```
 
-
-```{r}
 online_training <- scaledOnline[online_sample==1, 1:17]
 online_test <- scaledOnline[online_sample==2, 1:17]
-```
 
-```{r}
 # Selected Variables Model based off EDA
 online_training_selected <- scaled_Online_select[online_sample_selected==1, 1:7]
 online_test_selected <- scaled_Online_select[online_sample_selected==2, 1:7]
-```
 
-
-```{r}
 online_trainLabels <- online[online_sample==1, 18]
 online_testLabels <- online[online_sample==2, 18]
-```
 
-```{r}
 # Selected Variables Model based off EDA
 online_trainLabels_selected <- original_online[online_sample_selected==1, 8]
 online_testLabels_selected <- original_online[online_sample_selected==2, 8]
 ```
-
+Before applying our dataset to the model we have split the data into x values and a y target. The y target for this datset is revenue. We did a 4 to 1 split of the dataset and will have two models. One model will utilize every variable on the dataset. The other model is using variables that are significant to the outcome for revenue. After EDA and certain statistical tests the relevant variables are page values, month, exit rates, product related duration, traffic type, visitor type, and product related.
 ```{r, results='hide'}
 ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
 
