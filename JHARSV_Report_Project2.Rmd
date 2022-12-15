@@ -285,32 +285,32 @@ ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
   theme_ipsum() 
 ```
 
-Plotting highlights the imbalance between positive and negative classes in our response variable (Revenue). Also distribution is right skewed.
+Plotting highlights the imbalance between positive and negative classes in our response variable (Revenue). Also distribution is right skewed. In the histogram of weekend we can see Revenue is more over weekdays rather than weekends.
 
 ### Inferential Statistics  
-We will perform Chi-Square test on all the last 6 categorical variables.  
+We will perform Chi-Square test on all the last 6 categorical variables. For the variables with simulated p-value parameter False, the p-value is computed from the asymptotic chi-squared distribution of the test statistic. Otherwise, for variables without normal distribution p-value is calculated using Monte-Carlo simulations.  
 
 ```{r, results='markup'}
 os_contable = table(df_orig$Revenue, df_orig$OperatingSystems)
-os_contable
+# os_contable
 chisq.test(os_contable, simulate.p.value=T)
 ```
 
 ```{r, results='markup'}
 br_contable = table(df_orig$Revenue, df_orig$Browser)
-br_contable
+# br_contable
 chisq.test(br_contable, simulate.p.value=T)
 ```
 
 ```{r, results='markup'}
 rg_contable = table(df_orig$Revenue, df_orig$Region)
-rg_contable
+# rg_contable
 chisq.test(rg_contable, simulate.p.value=F)
 ```
 
 ```{r, results='markup'}
 Tt_contable = table(df_orig$Revenue, df_orig$TrafficType)
-Tt_contable
+# Tt_contable
 chisq.test(Tt_contable, simulate.p.value=T)
 ```
 
@@ -322,7 +322,7 @@ chisq.test(Vt_contable, simulate.p.value=F)
 
 ```{r, results='markup'}
 wk_contable = table(df_orig$Revenue, df_orig$Weekend)
-wk_contable
+# wk_contable
 chisq.test(wk_contable, simulate.p.value=F)
 ```
 
@@ -349,16 +349,15 @@ confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Se
 
 for (deep in 2:7) {
   tree_fit <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth = deep, cp=0.005))
-  # 
-  cm = confusionMatrix(predict(tree_fit, test, type = "class"), reference = test$Revenue, positive = "2") # from caret library
-  # 
+   
+  cm = confusionMatrix(predict(tree_fit, test, type = "class"), reference = test$Revenue, positive = "2")
+  
   cmaccu = cm$overall['Accuracy']
-  # print( paste("Total Accuracy = ", cmaccu ) )
-  # 
-  cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL ) # initialize a row of the metrics 
-  cmt = cbind( cmt, data.frame( t(cm$byClass) ) ) # the dataframe of the transpose, with k valued added in front
+  
+  cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL)
+  cmt = cbind( cmt, data.frame( t(cm$byClass)))
   confusionMatrixResultDf = rbind(confusionMatrixResultDf, cmt)
-  # print("Other metrics : ")
+
 }
 
 xkabledply(confusionMatrixResultDf, title="Kyphosis Classification Trees summary with varying MaxDepth")
@@ -381,7 +380,7 @@ Above graph of relative error vs. depth/cp shows that after maxdepth equals 6 th
 
 ### Plotting our tree  
 ```{r, results='markup'}
-loadPkg("rattle") # For fancyRpartPlot (Trees) Answer "no" on installing from binary source
+loadPkg("rattle")
 fancyRpartPlot(dtree_model)
 ```
 
@@ -389,7 +388,6 @@ fancyRpartPlot(dtree_model)
 library(pROC)
 
 prob = predict(dtree_model, test, type = "class")
-# df$prob=prob
 h <- roc(test$Revenue ~ as.numeric(prob))
 auc(h) # area-under-curve prefer 0.8 or higher.
 plot(h)
@@ -415,16 +413,14 @@ confusionMatrixResultDf = data.frame( Depth=numeric(0), Accuracy= numeric(0), Se
 
 for (deep in 2:10) {
   tree_fit <- rpart(Revenue ~ . - Region, data=train_new, method="class", control = list(maxdepth = deep, cp=0.001) )
-  # 
-  cm = confusionMatrix( predict(tree_fit, test, type = "class"), reference = test[, "Revenue"], positive = "2") # from caret library
-  # 
+  
+  cm = confusionMatrix( predict(tree_fit, test, type = "class"), reference = test[, "Revenue"], positive = "2")
   cmaccu = cm$overall['Accuracy']
-  # print( paste("Total Accuracy = ", cmaccu ) )
-  # 
-  cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL ) # initialize a row of the metrics 
-  cmt = cbind( cmt, data.frame( t(cm$byClass) ) ) # the dataframe of the transpose, with k valued added in front
+
+  cmt = data.frame(Depth=deep, Accuracy = cmaccu, row.names = NULL )
+  cmt = cbind( cmt, data.frame( t(cm$byClass) ) )
   confusionMatrixResultDf = rbind(confusionMatrixResultDf, cmt)
-  # print("Other metrics : ")
+
 }
 
 xkabledply(confusionMatrixResultDf, title="Kyphosis Classification Trees summary with varying MaxDepth")
@@ -455,6 +451,7 @@ fancyRpartPlot(dtree_model)
 unloadPkg("Caret")
 ```
 
+From above two experiments with unbalanced and oversampled (balanced) dataset. When data was unbalanced our accuracy was good ~89% and AUC score was 0.75, which is acceptable. When we oversampled the data it gives us less accuracy but AUC score of 0.81 that is above our 0.8 cutoff. We can make an inference that oversampling is not as beneficial as we thought. The evaluation criteria of AUC score we are using is giving us acceptable value on unbalanced data.  
 
 ###########################################################################################################################
 ###########################################################################################################################
