@@ -279,6 +279,7 @@ ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
   scale_x_continuous(breaks=1:13, ) + scale_y_continuous(n.breaks=6) + 
   theme_ipsum() 
 ```
+
 Plotting highlights the imbalance between positive and negative classes in our response variable (Revenue). Also distribution is right skewed.
 
 ### Inferential Statistics  
@@ -327,9 +328,7 @@ set.seed(1234)
 df_sample <- sample(2, nrow(df), replace=TRUE, prob=c(0.80, 0.20))
 
 train <- df[df_sample==1, ]
-# test_X <- df[df_sample==2, 1:17]
-# 
-# train_Y <- df[df_sample==1, 18]
+
 test <- df[df_sample==2, ]
 ```
 
@@ -359,7 +358,7 @@ for (deep in 2:7) {
 xkabledply(confusionMatrixResultDf, title="Kyphosis Classification Trees summary with varying MaxDepth")
 ```
 
-Maxdepth equals 6 is giving highest accuracy, precision, and recall. So we will use to perform further evaluation using maxdepth as 6.  
+Maxdepth equals 6 is giving highest accuracy, precision, and recall. So we will perform further evaluation using maxdepth as 6.  
 
 ```{r, results='markup'}
 dtree_model <- rpart(Revenue ~ . - Region, data=train, method="class", control = list(maxdepth = 6, cp=0.005) )
@@ -371,6 +370,7 @@ We are getting 88.9 as accuracy for above tree model. But we can observe sensiti
 ```{r, results='markup'}
 plotcp(dtree_model)
 ```
+
 Above graph of relative error vs. depth/cp shows that after maxdepth equals 6 there is saturation in error.  
 
 ### Plotting our tree  
@@ -388,6 +388,7 @@ h <- roc(test$Revenue ~ as.numeric(prob))
 auc(h) # area-under-curve prefer 0.8 or higher.
 plot(h)
 ```
+
 Above ROC-AUC analysis shows that imbalance in dataset is not giving good AUC score (<0.8). This is because specificity is much higher than sensitivity.  
 
 ### Oversampling dataset
@@ -438,6 +439,7 @@ h <- roc(test$Revenue ~ as.numeric(prob))
 auc(h) # area-under-curve prefer 0.8 or higher.
 plot(h)
 ```
+
 Oversampling causes sensitivity to increase because FN is increased. AUC score is 81.3 now (>0.8).
 
 ```{r, results='markup'}
