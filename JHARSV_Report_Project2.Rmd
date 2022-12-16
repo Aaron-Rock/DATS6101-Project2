@@ -743,6 +743,14 @@ kPlot_selected
 
 It is easy to see that after we implement both K-Nearest Neighbor models one being the full model and the other being a model using selected x variables that we have a bit higher accuracy with the selective variable model. The accuracy plots above gives us the best k to accuracy. When we look at the output of the models with all the different k values you can see that accuracy is important but for our dataset so is specificity with the balance issue of yes to no ratio in revenue.
 
+```{r, results='hide'}
+# Max Accuracy
+online_pred_max <- knn(train = online_training, test = online_test, cl=online_trainLabels, k=15)
+onlinePREDCross_max <- CrossTable(online_testLabels, online_pred, prop.chisq = FALSE)
+# Selected Variable Model
+online_pred_max_selected <- knn(train = online_training_selected, test = online_test_selected, cl=online_trainLabels_selected, k=25)
+onlinePREDCross_max_selected <- CrossTable(online_testLabels_selected, online_pred_selected, prop.chisq = FALSE)
+```
 
 ```{r}
 loadPkg("pROC")
