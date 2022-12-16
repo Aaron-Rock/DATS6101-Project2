@@ -41,7 +41,10 @@ options(scientific=T, digits = 3)
 # use scipen=999 to prevent scientific notation at all times
 ```
 
+
+
 # Online Shoppers Dataset  
+
 
 ## Introduction to our Modeling
 The "Online Shoppers Purchasing Intention Dataset" was found from the UCI archive and Kaggle, which was itself collected from Bahcesehir University in Istanbul, and gathered by the Inveon Information Technologies Consultancy and Trade in Istanbul. There are 12330 Observations, with 18 variables. We treated 17 of those columns as possible covariates in our models, and the remaining variable `Revenue`, was our response in all models. Our models were addressing whether the customer spent or not (represented by `Revenue` as a 1 and 0 respectively) based on the 17 features. These 17 features had a variety of available information, some from Google Analytics, and some from the website details/recorded cookies, which included the pages that the customer visited, how long they stayed on each page, their demographics, general page/website details, the website traffic at the time, and day/type of day when visited.
@@ -75,7 +78,6 @@ We will perform quick exploratory data analysis the first half to gain a better 
 
 
 #Logistic Models
-
 
 
 ## Initial Cleaning
@@ -236,6 +238,7 @@ mcFadden = 1 - logLik(ShopModelCV$finalModel)/logLik(ShopperNullLogit)
 mcFadden
 ```
 
+
 ## Interpretation and Model Comparison
 
 All of the models had generally high accuracies and AUCs, but I would choose the final model as it has the lowest AIC out of the three models. While the McFadden and AUC of the full model was slightly higher than that of the reduced model, as the complexity is much less with only 7 out of the possible 17 different features, the lower complexity and balance between underfitting and overfitting between the initial and full model has me leaning more towards the reduced model. Lastly, by sacrificing accuracy, it is possible to greatly increase the true positive rate, though it will increase the false positive rate a bit. Again, so long as the AUC is good and the ROC curve is smooth throughout, the cutoff rate can be adjusted depending on the standards/metric of the e-commerce business at hand.
@@ -284,6 +287,7 @@ df$Month = factor(df$Month)
 head(df)
 ```
 
+
 ## EDA  
 
 We will perform exploratory data analysis for 5 categorical variables: OperatingSystem, Browser, TrafficType, VisitorType, Weekend, and Region and the response variable Revenue.
@@ -326,6 +330,7 @@ ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
 ```
 
 Plotting highlights the imbalance between positive and negative classes in our response variable (Revenue). Also distribution is right skewed. In the histogram of weekend we can see Revenue is more over weekdays rather than weekends.
+
 
 ## Inferential Statistics  
 
@@ -379,7 +384,9 @@ train <- df[df_sample==1, ]
 test <- df[df_sample==2, ]
 ```
 
+
 ## Classification Tree Modeling and Hyperparameter Tuning  
+
 We will choose "maxdepth" parameter for our decision tree. For this we will be using original unbalanced dataset only.  
 
 ```{r, results='markup'}
@@ -419,6 +426,7 @@ plotcp(dtree_model)
 
 Above graph of relative error vs. depth/cp shows that after maxdepth equals 6 there is saturation in error.  
 
+
 ## Plotting our tree  
 
 ```{r, results='markup'}
@@ -437,6 +445,7 @@ plot(h)
 
 Above ROC-AUC analysis shows that imbalance in dataset is not giving good AUC score (<0.8). This is because specificity is much higher than sensitivity.  
 
+
 ## Oversampling dataset
 
 Now we will treat our unbalance dataset. True values are very less as compared to False. So we will oversample True observation of Revenue equal to False value for each corresponding variable in dataset.  
@@ -448,6 +457,7 @@ table(train_new$Revenue)
 ```
 
 Above table shows that True and False observations are equal.  
+
 
 ## Modeling and Tuning on new balance dataset  
 
@@ -729,7 +739,9 @@ ResultDf = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NUL
 ResultDf_selected = data.frame( k=numeric(0), Total.Accuracy= numeric(0), row.names = NULL )
 ```
 
+
 ## KNN Models both Full Model and Specific Variable
+
 ```{r}
 library(class)
 library(gmodels)
