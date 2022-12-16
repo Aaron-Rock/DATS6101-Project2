@@ -47,15 +47,17 @@ options(scientific=T, digits = 3)
 
 
 ## Introduction to our Dataset and Models
+
 The "Online Shoppers Purchasing Intention Dataset" was found from the UCI archive and Kaggle, which was itself collected from Bahcesehir University in Istanbul, and gathered by the Inveon Information Technologies Consultancy and Trade in Istanbul. There are 12330 Observations, with 18 variables. We treated 17 of those columns as possible covariates in our models, and the remaining variable `Revenue`, was our response in all models. Our models were addressing whether the customer spent or not (represented by `Revenue` as a 1 and 0 respectively) based on the 17 features. These 17 features had a variety of available information, some from Google Analytics, and some from the website details/recorded cookies, which included the pages that the customer visited, how long they stayed on each page, their demographics, general page/website details, the website traffic at the time, and day/type of day when visited.
 
-A big point of interest in our dataset was the unbalanced nature of our response variable. The greater majority (84.5%) of the consumers did not spend after their website visit, compared to a measly 15.5% who did. While this is easily explainable in the real world as a majority of website visitors can be expected to be e-window shopping rather than looking to make a purchase, this did increase the difficulty of the problem. We had to determine the best metric to use to determine our best model, and also look to the different ways to tackle the dataset so as to not under represent the information that predicts a possible buyer compared to a e-window shopper. In the end, given that both specificity and sensitivity would be innately imbalanced due to the `revenue` split, we decided to give up on accuracy as the metric for the model, and instead use AUC as the best metric going forward.
+A big point of interest in our dataset was the unbalanced nature of our response variable. The greater majority (84.5%) of the consumers did not spend after their website visit, compared to a measly 15.5% who did. While this is easily explainable in the real world as a majority of website visitors can be expected to be e-window shopping rather than looking to make a purchase, this did increase the difficulty of the problem. We had to determine the best metric to use to determine our best model, and also look to the different ways to tackle the dataset so as to not under represent the information that predicts a possible buyer compared to a e-window shopper. In the end, given that both specificity and sensitivity would be innately imbalanced due to the `revenue` split, we decided to give up on accuracy as the metric for our model, and instead use AUC as the best metric going forward.
 
 Finally, we decided to split our project into three possible models. We used Logistic Regression, Classification Trees, and K-Nearest Neighbors classification as the techniques to predict our response.
 
 
 
 ## Smart Questions
+
 Our Research Topic/Question:
 What variables are strong predictors of the likelihood that a consumer will generate revenue on an e-commerce site? Can we build a convincing model to determine the likelihood of that revenue generation?
 
@@ -70,10 +72,10 @@ Achievable:
 Despite there being 12330 observations, the computing power needed to generate a model and do exploratory data analysis is achievable, and with three people working in the allotted time frame, the dataset is more than manageable. Of course, the more computationally-expensive models, like the regression tree, may need to be limited in depth and possibilities in order to fit within our time frame.
 
 Relevant: 
-Our dataset is relevant with e-commerce shopping being so popular with consumers. Nowadays, e-commerce companies heavily invest in AB testing, and the data/models provided from this project could give more insight into the direction that these companies would like to proceed in, in order to maximize their gains/appropriate metric.
+Our dataset is relevant because e-commerce shopping is incredibly popular with consumers. Nowadays, e-commerce companies heavily invest in AB testing, and the data/models provided from this project could give more insight into the direction that these companies would like to proceed in, in order to maximize their gains/appropriate metric.
 
 Time-oriented: 
-We will perform quick exploratory data analysis the first half to gain a better understanding of the new dataset we have chosen, and then for the second half, build models for prediction.
+We will perform quick exploratory data analysis in the first half to gain a better understanding of the new dataset we have chosen, and then for the second half, build models for prediction.
 
 
 
@@ -98,7 +100,7 @@ str(online_shoppers)
 ```
 
 
-```{r, results='hide'}
+```{r, results='markup'}
 online_shoppers$OperatingSystems = factor(online_shoppers$OperatingSystems)
 online_shoppers$Browser = factor(online_shoppers$Browser)
 online_shoppers$Region = factor(online_shoppers$Region)
@@ -145,7 +147,7 @@ From the t-test, we reject the null, and bring strong evidence to support the al
 
 ## Initial Logistic Regression
 
-Here is the initial logistic regression using the correlation plot to select features. Generally, the covariates with the highest correlations with the response were selected, without including both pairs of the covariates that have high correlation with each other. For example, while `ProductRelated` and `Product_Duration` could both be predictors of `Revenue`, they have high correlation with each other, and `Product_Duration` is not included
+Here is the initial logistic regression using the correlation plot to select features. Generally, the covariates with the highest correlations with the response were selected, without including both pairs of the covariates that have high correlation with each other. For example, while `ProductRelated` and `Product_Duration` could both be predictors of `Revenue`, they have high correlation with each other, and `Product_Duration` is not included.
 
 ```{r, results='markup'}
 unloadPkg("caret")
@@ -263,12 +265,13 @@ No null values in the dataset.
 table(df_orig$Revenue)
 ```
 
-We can see there is an imbalance in dataset. True values are less than 20% as compares to False.  
+We can see there is an imbalance in dataset. True values are less than 20% as compared to the False values.  
 
 
 ## Factoring categorical variables
 
 We will factor our categorical variables.  
+
 ```{r, results='markup'}
 df = data.frame(df_orig)
 
@@ -329,7 +332,7 @@ ggplot(df_orig, aes(x=Region, color=Revenue, fill=Revenue)) +
   theme_ipsum() 
 ```
 
-Plotting highlights the imbalance between positive and negative classes in our response variable (Revenue). Also distribution is right skewed. In the histogram of weekend we can see Revenue is more over weekdays rather than weekends.
+Plotting highlights the imbalance between positive and negative classes in our response variable (Revenue). The distribution is also right skewed. In the histogram of `weekend` we can see there are more ones in `Revenue` over weekdays as compared to weekends.
 
 
 ## Inferential Statistics  
