@@ -46,7 +46,7 @@ options(scientific=T, digits = 3)
 # Online Shoppers Dataset  
 
 
-## Introduction to our Modeling
+## Introduction to our Dataset and Models
 The "Online Shoppers Purchasing Intention Dataset" was found from the UCI archive and Kaggle, which was itself collected from Bahcesehir University in Istanbul, and gathered by the Inveon Information Technologies Consultancy and Trade in Istanbul. There are 12330 Observations, with 18 variables. We treated 17 of those columns as possible covariates in our models, and the remaining variable `Revenue`, was our response in all models. Our models were addressing whether the customer spent or not (represented by `Revenue` as a 1 and 0 respectively) based on the 17 features. These 17 features had a variety of available information, some from Google Analytics, and some from the website details/recorded cookies, which included the pages that the customer visited, how long they stayed on each page, their demographics, general page/website details, the website traffic at the time, and day/type of day when visited.
 
 A big point of interest in our dataset was the unbalanced nature of our response variable. The greater majority (84.5%) of the consumers did not spend after their website visit, compared to a measly 15.5% who did. While this is easily explainable in the real world as a majority of website visitors can be expected to be e-window shopping rather than looking to make a purchase, this did increase the difficulty of the problem. We had to determine the best metric to use to determine our best model, and also look to the different ways to tackle the dataset so as to not under represent the information that predicts a possible buyer compared to a e-window shopper. In the end, given that both specificity and sensitivity would be innately imbalanced due to the `revenue` split, we decided to give up on accuracy as the metric for the model, and instead use AUC as the best metric going forward.
@@ -77,7 +77,7 @@ We will perform quick exploratory data analysis the first half to gain a better 
 
 
 
-#Logistic Models
+# Logistic Models
 
 
 ## Initial Cleaning
